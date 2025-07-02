@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Toolbox API</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --neon-pink: #ff2e63;
+            --neon-blue: #00f2fe;
+            --black: #0a0a0a;
+            --white: #f8f9fa;
+        }
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background-color: var(--white);
+            color: var(--black);
+            min-height: 100vh;
+        }
+        .neo-btn {
+            background: var(--white);
+            border: 3px solid var(--black);
+            box-shadow: 6px 6px 0 var(--black);
+            transition: all 0.2s ease;
+        }
+        .neo-btn:hover {
+            transform: translate(3px, 3px);
+            box-shadow: 3px 3px 0 var(--black);
+        }
+        .gradient-text {
+            background: linear-gradient(45deg, var(--neon-pink), var(--neon-blue));
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: inline-block;
+        }
+        .api-key {
+            font-family: 'Courier New', monospace;
+            background-color: #f3f4f6;
+            padding: 1rem;
+            border: 2px solid var(--black);
+            word-break: break-all;
+            position: relative;
+        }
+        .copy-btn {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: var(--black);
+            color: white;
+            border: none;
+            padding: 0.25rem 0.5rem;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8 bg-gray-50">
+    <!-- Navbar -->
+    <nav class="mb-12">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between items-center h-20">
+                <div class="flex items-center">
+                    <a href="/" class="text-2xl font-bold bg-black text-white px-4 py-2">TOOLBOX API</a>
+                </div>
+                <div class="flex space-x-4">
+                    <a href="/docs/webfetch" class="neo-btn px-4 py-2 font-bold border-2 border-black">
+                        📚 Documentación
+                    </a>
+                    <a href="/" class="neo-btn px-4 py-2 font-bold bg-black text-white">
+                        ← Volver al inicio
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-4xl mx-auto bg-white p-8 border-2 border-black shadow-lg">
+        <h1 class="text-3xl md:text-4xl font-bold mb-2">
+            <span class="gradient-text">Panel de Control</span>
+        </h1>
+        <p class="text-gray-600 mb-8">Administra tus claves de API y accesos</p>
+        
+        <!-- API Keys Section -->
+        <section class="mb-12">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">Tus Claves API</h2>
+                <button id="generateKeyBtn" class="neo-btn px-6 py-2 font-bold bg-black text-white hover:bg-gray-800">
+                    + Generar Nueva Clave
+                </button>
+            </div>
+
+            <!-- API Key List -->
+            <div id="apiKeysList" class="space-y-4">
+                <!-- Placeholder for dynamic content -->
+                <div class="text-center py-8 text-gray-500" id="noKeysMessage">
+                    No hay claves API generadas aún
+                </div>
+            </div>
+        </section>
+
+        <!-- Usage Stats (Placeholder for future implementation) -->
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold mb-6">Estadísticas de Uso</h2>
+            <div class="bg-gray-100 p-6 text-center border border-gray-300">
+                <p class="text-gray-500">Las estadísticas de uso estarán disponibles pronto</p>
+            </div>
+        </section>
+
+        <!-- Documentation -->
+        <section>
+            <h2 class="text-2xl font-bold mb-4">¿Cómo usar tu API Key?</h2>
+            <div class="bg-gray-50 p-6 border border-gray-200">
+                <p class="mb-4">Incluye tu clave API en el encabezado de autorización:</p>
+                <pre class="bg-black text-green-400 p-4 overflow-x-auto text-sm">
+<code>curl -X POST https://toolbox-api.fly.dev/api/tool \
+  -H "Authorization: Bearer TU_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tool": "webfetch",
+    "payload": {
+      "url": "https://example.com",
+      "format": "text"
+    }
+  }'</code>
+                </pre>
+            </div>
+        </section>
+    </main>
+
+    <!-- New API Key Modal -->
+    <div id="apiKeyModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+        <div class="bg-white p-8 max-w-md w-full mx-4 border-2 border-black">
+            <h3 class="text-2xl font-bold mb-4">Nueva Clave API</h3>
+            <p class="mb-6">Guarda esta clave en un lugar seguro. No podrás volver a verla.</p>
+            
+            <div class="api-key mb-6" id="newApiKeyDisplay">
+                <button class="copy-btn" onclick="copyToClipboard('newApiKeyDisplay')">Copiar</button>
+                <span id="newApiKey"></span>
+            </div>
+            
+            <div class="flex justify-end space-x-4">
+                <button onclick="closeModal()" class="px-4 py-2 border-2 border-black">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Generate a random API key (in a real app, this would be generated server-side)
+        function generateAPIKey() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            let key = 'tbx_';
+            for (let i = 0; i < 32; i++) {
+                key += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return key;
+        }
+
+        // Show new API key modal
+        document.getElementById('generateKeyBtn').addEventListener('click', function() {
+            const newKey = generateAPIKey();
+            document.getElementById('newApiKey').textContent = newKey;
+            document.getElementById('apiKeyModal').classList.remove('hidden');
+            
+            // In a real app, you would send this to your server to save it
+            saveAPIKey(newKey);
+        });
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('apiKeyModal').classList.add('hidden');
+        }
+
+        // Copy to clipboard function
+        function copyToClipboard(elementId) {
+            const element = document.getElementById(elementId);
+            const text = element.textContent || element.innerText;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                const button = event.target;
+                const originalText = button.textContent;
+                button.textContent = '¡Copiado!';
+                
+                setTimeout(() => {
+                    button.textContent = originalText;
+                }, 2000);
+            }).catch(err => {
+                console.error('Error al copiar: ', err);
+            });
+        }
+
+        // Save API key to local storage (temporary solution)
+        function saveAPIKey(key) {
+            const keys = JSON.parse(localStorage.getItem('apiKeys') || '[]');
+            const newKey = {
+                id: Date.now(),
+                key: key,
+                created: new Date().toISOString(),
+                isActive: true
+            };
+            
+            keys.unshift(newKey);
+            localStorage.setItem('apiKeys', JSON.stringify(keys));
+            
+            // Update the UI
+            displayAPIKeys();
+        }
+
+        // Display API keys
+        function displayAPIKeys() {
+            const keys = JSON.parse(localStorage.getItem('apiKeys') || '[]');
+            const container = document.getElementById('apiKeysList');
+            
+            if (keys.length === 0) {
+                document.getElementById('noKeysMessage').style.display = 'block';
+                return;
+            }
+            
+            document.getElementById('noKeysMessage').style.display = 'none';
+            
+            container.innerHTML = keys.map(key => `
+                <div class="border-2 border-black p-4">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <span class="font-mono text-sm bg-gray-100 px-2 py-1">${key.key.substring(0, 12)}...</span>
+                            <span class="text-xs text-gray-500 ml-2">Creada el ${new Date(key.created).toLocaleDateString()}</span>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button onclick="copyToClipboard('key-${key.id}')" class="text-xs px-2 py-1 bg-black text-white">
+                                Copiar
+                            </button>
+                            <button onclick="revokeKey('${key.id}')" class="text-xs px-2 py-1 border border-black">
+                                Revocar
+                            </button>
+                        </div>
+                    </div>
+                    <div id="key-${key.id}" class="hidden">${key.key}</div>
+                    <div class="flex items-center text-xs text-gray-500 mt-2">
+                        <span class="w-2 h-2 rounded-full bg-green-500 mr-1"></span>
+                        Activa
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Revoke API key
+        function revokeKey(id) {
+            if (confirm('¿Estás seguro de que deseas revocar esta clave? Esta acción no se puede deshacer.')) {
+                const keys = JSON.parse(localStorage.getItem('apiKeys') || '[]');
+                const updatedKeys = keys.filter(key => key.id != id);
+                localStorage.setItem('apiKeys', JSON.stringify(updatedKeys));
+                displayAPIKeys();
+            }
+        }
+
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', function() {
+            displayAPIKeys();
+        });
+    </script>
+</body>
+</html>

@@ -68,11 +68,14 @@ func respondJSON(w http.ResponseWriter, status int, data interface{}) {
 }
 
 func homeHandler(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path != "/" {
+	switch r.URL.Path {
+	case "/":
+		http.ServeFile(w, r, "index.html")
+	case "/dashboard":
+		http.ServeFile(w, r, "dashboard.html")
+	default:
 		http.NotFound(w, r)
-		return
 	}
-	http.ServeFile(w, r, "index.html")
 }
 
 func docsHandler(w http.ResponseWriter, r *http.Request) {

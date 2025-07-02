@@ -13,6 +13,8 @@ kill-port:
 	@lsof -ti :8000 | xargs -r kill -9 2>/dev/null || true
 
 stop: kill-port
+	podman machine stop
+	podman machine start
 	@echo "Stopping and removing existing containers..."
 	@podman stop toolbox-api 2>/dev/null || true
 	@podman rm -f toolbox-api 2>/dev/null || true

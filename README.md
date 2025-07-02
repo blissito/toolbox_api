@@ -18,7 +18,7 @@
 git clone https://github.com/tu-usuario/toolbox-api.git
 cd toolbox-api
 
-# Iniciar con Docker
+# Iniciar con Podman (Like docker but better)
 make rebuild
 ```
 
