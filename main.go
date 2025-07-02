@@ -75,6 +75,16 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "index.html")
 }
 
+func docsHandler(w http.ResponseWriter, r *http.Request) {
+	// Servir el archivo de documentación
+	if r.URL.Path == "/docs/webfetch" || r.URL.Path == "/docs/webfetch/" {
+		http.ServeFile(w, r, "docs/webfetch.html")
+		return
+	}
+	// Redirigir si se accede a /docs sin especificar el archivo
+	http.Redirect(w, r, "/docs/webfetch", http.StatusFound)
+}
+
 func main() {
 	// Servir archivos estáticos
 	fs := http.FileServer(http.Dir("."))
@@ -82,8 +92,17 @@ func main() {
 
 	// Rutas de la API
 	http.HandleFunc("/api/tool", toolHandler)
-
-	// Ruta para la página de inicio
+	
+	// Ruta de documentación
+	http.HandleFunc("/docs/webfetch", docsHandler)
+	http.HandleFunc("/docs/webfetch/", docsHandler)
+	
+	// Redirigir /docs a /docs/webfetch
+	http.HandleFunc("/docs", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/docs/webfetch", http.StatusMovedPermanently)
+	})
+	
+	// Ruta de inicio
 	http.HandleFunc("/", homeHandler)
 
 	port := ":8000"

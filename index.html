@@ -3,184 +3,185 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi Página Inicial</title>
+    <title>Toolbox API - Potencia tus Agentes IA</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --neon-pink: #ff2e63;
+            --neon-blue: #00f2fe;
+            --neon-green: #4facfe;
+            --black: #0a0a0a;
+            --white: #f8f9fa;
+        }
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: 'Space Grotesk', sans-serif;
+            background-color: var(--white);
+            color: var(--black);
+            border: 12px solid var(--black);
+            min-height: 100vh;
+        }
+        .neo-btn {
+            background: var(--white);
+            border: 3px solid var(--black);
+            box-shadow: 6px 6px 0 var(--black);
+            transition: all 0.2s ease;
+        }
+        .neo-btn:hover {
+            transform: translate(3px, 3px);
+            box-shadow: 3px 3px 0 var(--black);
+        }
+        .neo-card {
+            border: 3px solid var(--black);
+            box-shadow: 6px 6px 0 var(--black);
+            transition: all 0.2s ease;
+        }
+        .neo-card:hover {
+            transform: translate(6px, 6px);
+            box-shadow: 3px 3px 0 var(--black);
+        }
+        .gradient-text {
+            background: linear-gradient(45deg, var(--neon-pink), var(--neon-blue));
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: inline-block;
         }
     </style>
 </head>
-<body class="bg-gray-50">
+<body class="p-4 md:p-8">
     <!-- Navbar -->
-    <nav class="bg-white shadow-sm">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
+    <nav class="mb-12">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between items-center h-20">
                 <div class="flex items-center">
-                    <span class="text-xl font-bold text-indigo-600">MiSitio</span>
+                    <a href="/" class="text-2xl font-bold bg-black text-white px-4 py-2">TOOLBOX API</a>
                 </div>
-                <div class="hidden md:flex items-center space-x-8">
-                    <a href="#" class="text-gray-700 hover:text-indigo-600 px-3 py-2 text-sm font-medium">Inicio</a>
-                    <a href="#features" class="text-gray-700 hover:text-indigo-600 px-3 py-2 text-sm font-medium">Características</a>
-                    <a href="#about" class="text-gray-700 hover:text-indigo-600 px-3 py-2 text-sm font-medium">Acerca de</a>
-                    <a href="#contact" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700">Contacto</a>
+                <div class="flex space-x-4">
+                    <a href="/docs/webfetch" class="neo-btn px-6 py-3 font-bold text-lg">
+                        Documentación
+                    </a>
+                    <a href="#get-started" class="neo-btn px-6 py-3 font-bold text-lg">
+                        🚀 OBTÉN TU API KEY GRATIS
+                    </a>
                 </div>
-                <!-- Mobile menu button -->
-                <div class="md:hidden flex items-center">
-                    <button class="text-gray-500 hover:text-gray-600">
-                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                        </svg>
-                    </button>
-                </div>
+                <button class="md:hidden p-2 border-2 border-black">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
             </div>
         </div>
     </nav>
 
     <!-- Hero Section -->
-    <div class="relative bg-white overflow-hidden">
-        <div class="max-w-7xl mx-auto">
-            <div class="relative z-10 pb-8 bg-white sm:pb-16 md:pb-20 lg:max-w-2xl lg:w-full lg:pb-28 xl:pb-32">
-                <main class="mt-10 mx-auto max-w-7xl px-4 sm:mt-12 sm:px-6 lg:mt-16 lg:px-8 xl:mt-20">
-                    <div class="sm:text-center lg:text-left">
-                        <h1 class="text-4xl tracking-tight font-extrabold text-gray-900 sm:text-5xl md:text-6xl">
-                            <span class="block">Bienvenido a</span>
-                            <span class="block text-indigo-600">MiSitio Web</span>
-                        </h1>
-                        <p class="mt-3 text-base text-gray-500 sm:mt-5 sm:text-lg sm:max-w-xl sm:mx-auto md:mt-5 md:text-xl lg:mx-0">
-                            Una solución moderna para todas tus necesidades digitales. Construido con las últimas tecnologías para ofrecer el mejor rendimiento.
-                        </p>
-                        <div class="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start">
-                            <div class="rounded-md shadow">
-                                <a href="#" class="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 md:py-4 md:text-lg md:px-10">
-                                    Comenzar
-                                </a>
-                            </div>
-                            <div class="mt-3 sm:mt-0 sm:ml-3">
-                                <a href="#" class="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 md:py-4 md:text-lg md:px-10">
-                                    Ver demo
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </main>
-            </div>
-        </div>
-        <div class="lg:absolute lg:inset-y-0 lg:right-0 lg:w-1/2">
-            <img class="h-56 w-full object-cover sm:h-72 md:h-96 lg:w-full lg:h-full" src="https://images.unsplash.com/photo-1551434678-e076c223a692?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=2850&q=80" alt="">
-        </div>
-    </div>
-
-    <!-- Features Section -->
-    <div id="features" class="py-12 bg-white">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="lg:text-center">
-                <h2 class="text-base text-indigo-600 font-semibold tracking-wide uppercase">Características</h2>
-                <p class="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-gray-900 sm:text-4xl">
-                    Todo lo que necesitas para empezar
+    <section class="mb-24">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="text-center mb-16">
+                <h1 class="text-4xl md:text-6xl font-bold mb-6 leading-tight">
+                    <span class="block">HERRAMIENTAS PARA TUS AGENTES</span>
+                    <span class="gradient-text">LLM VÍA API & MCP</span>
+                </h1>
+                <p class="text-xl md:text-2xl max-w-3xl mx-auto mb-10">
+                    Simplifica el desarrollo de agentes inteligentes con una única API, un solo endpoint y una sola clave API. Potencia tus proyectos de IA sin complicaciones.
                 </p>
-                <p class="mt-4 max-w-2xl text-xl text-gray-500 lg:mx-auto">
-                    Nuestra plataforma ofrece las mejores herramientas para impulsar tu negocio.
-                </p>
+                <a href="#get-started" class="neo-btn inline-block px-8 py-4 text-xl font-bold bg-black text-white hover:bg-gray-900">
+                    EMPIEZA GRATIS AHORA →
+                </a>
             </div>
-
-            <div class="mt-10">
-                <div class="space-y-10 md:space-y-0 md:grid md:grid-cols-2 md:gap-x-8 md:gap-y-10">
-                    <div class="relative">
-                        <div class="absolute flex items-center justify-center h-12 w-12 rounded-md bg-indigo-500 text-white">
-                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                            </svg>
-                        </div>
-                        <p class="ml-16 text-lg leading-6 font-medium text-gray-900">Rápido y Eficiente</p>
-                        <p class="mt-2 ml-16 text-base text-gray-500">Optimizado para ofrecer la mejor velocidad de carga y rendimiento en todos los dispositivos.</p>
-                    </div>
-
-                    <div class="relative">
-                        <div class="absolute flex items-center justify-center h-12 w-12 rounded-md bg-indigo-500 text-white">
-                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                            </svg>
-                        </div>
-                        <p class="ml-16 text-lg leading-6 font-medium text-gray-900">Seguro por Defecto</p>
-                        <p class="mt-2 ml-16 text-base text-gray-500">Protegemos tus datos con los más altos estándares de seguridad.</p>
-                    </div>
-
-                    <div class="relative">
-                        <div class="absolute flex items-center justify-center h-12 w-12 rounded-md bg-indigo-500 text-white">
-                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a2 2 0 012-2h12a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V5z" />
-                            </svg>
-                        </div>
-                        <p class="ml-16 text-lg leading-6 font-medium text-gray-900">Diseño Responsivo</p>
-                        <p class="mt-2 ml-16 text-base text-gray-500">Se ve perfecto en cualquier dispositivo, desde móviles hasta escritorios.</p>
-                    </div>
-
-                    <div class="relative">
-                        <div class="absolute flex items-center justify-center h-12 w-12 rounded-md bg-indigo-500 text-white">
-                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                            </svg>
-                        </div>
-                        <p class="ml-16 text-lg leading-6 font-medium text-gray-900">Fácil de Usar</p>
-                        <p class="mt-2 ml-16 text-base text-gray-500">Interfaz intuitiva diseñada para que cualquiera pueda usarla sin dificultad.</p>
+            
+            <div class="neo-card max-w-5xl mx-auto p-1 bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500">
+                <div class="bg-white p-1">
+                    <div class="bg-gray-900 p-6 text-gray-100 font-mono text-sm overflow-x-auto">
+                        <span class="text-green-400"># Ejemplo de uso con cURL</span><br>
+                        <span class="text-purple-400">$</span> curl -X POST <span class="text-blue-400">https://api.toolbox.com/v1/agent</span> \<br>
+                        &nbsp;&nbsp;-H <span class="text-yellow-400">"Authorization: Bearer TU_API_KEY"</span> \<br>
+                        &nbsp;&nbsp;-H <span class="text-yellow-400">"Content-Type: application/json"</span> \<br>
+                        &nbsp;&nbsp;-d '<span class="text-blue-300">{</span><br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;<span class="text-green-400">"tool"</span>: <span class="text-yellow-400">"web_search"</span>,<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;<span class="text-green-400">"query"</span>: <span class="text-yellow-400">"últimas noticias de IA"</span><br>
+                        <span class="text-blue-300">}'</span>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
+    </section>
 
-    <!-- CTA Section -->
-    <div class="bg-indigo-700">
-        <div class="max-w-2xl mx-auto text-center py-16 px-4 sm:py-20 sm:px-6 lg:px-8">
-            <h2 class="text-3xl font-extrabold text-white sm:text-4xl">
-                <span class="block">¿Listo para comenzar?</span>
-                <span class="block">Empieza hoy mismo.</span>
-            </h2>
-            <p class="mt-4 text-lg leading-6 text-indigo-200">
-                Únete a miles de usuarios satisfechos que ya están mejorando su presencia en línea con nosotros.
-            </p>
-            <a href="#" class="mt-8 w-full inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-indigo-600 bg-white hover:bg-indigo-50 sm:w-auto">
-                Crear cuenta gratuita
-            </a>
+    <!-- Características -->
+    <section id="features" class="py-16 bg-white">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold mb-6">
+                    <span class="gradient-text">TODO LO QUE NECESITAS</span><br>
+                    EN UNA SOLA API
+                </h2>
+                <p class="text-xl max-w-3xl mx-auto">
+                    Integra múltiples herramientas de IA con una sola llamada. Sin complicaciones, sin múltiples integraciones.
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Característica 1 -->
+                <div class="neo-card p-6 bg-white">
+                    <div class="text-4xl mb-4">⚡</div>
+                    <h3 class="text-xl font-bold mb-3">Integración Sencilla</h3>
+                    <p class="text-gray-700">Un solo endpoint para todas tus necesidades de IA. Configuración en minutos, no en días.</p>
+                </div>
+
+                <!-- Característica 2 -->
+                <div class="neo-card p-6 bg-white">
+                    <div class="text-4xl mb-4">🔑</div>
+                    <h3 class="text-xl font-bold mb-3">Una Sola API Key</h3>
+                    <p class="text-gray-700">Accede a todas las herramientas con una única clave de autenticación.</p>
+                </div>
+
+                <!-- Característica 3 -->
+                <div class="neo-card p-6 bg-white">
+                    <div class="text-4xl mb-4">🚀</div>
+                    <h3 class="text-xl font-bold mb-3">Escalable</h3>
+                    <p class="text-gray-700">Diseñado para crecer contigo, desde proyectos pequeños hasta aplicaciones empresariales.</p>
+                </div>
+            </div>
         </div>
-    </div>
+    </section>
+
+    <!-- CTA -->
+    <section id="get-started" class="py-20 bg-black text-white">
+        <div class="max-w-4xl mx-auto text-center px-4">
+            <h2 class="text-3xl md:text-4xl font-bold mb-6">
+                ¿LISTO PARA POTENCIAR TUS AGENTES IA?
+            </h2>
+            <p class="text-xl mb-8 max-w-2xl mx-auto">
+                Obtén tu API Key gratuita y comienza a construir el futuro de la IA hoy mismo.
+            </p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="#" class="neo-btn inline-block px-8 py-4 text-lg font-bold bg-white text-black hover:bg-gray-100">
+                    REGÍSTRATE GRATIS
+                </a>
+                <a href="#" class="neo-btn inline-block px-8 py-4 text-lg font-bold border-2 border-white text-indigo-500 hover:bg-white hover:text-black">
+                    VER DOCUMENTACIÓN
+                </a>
+            </div>
+        </div>
+    </section>
 
     <!-- Footer -->
-    <footer class="bg-gray-800">
-        <div class="max-w-7xl mx-auto py-12 px-4 overflow-hidden sm:px-6 lg:px-8">
-            <nav class="-mx-5 -my-2 flex flex-wrap justify-center" aria-label="Footer">
-                <div class="px-5 py-2">
-                    <a href="#" class="text-base text-gray-300 hover:text-white">
-                        Inicio
-                    </a>
+    <footer class="py-12 border-t-4 border-black">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-6 md:mb-0">
+                    <span class="text-2xl font-bold bg-black text-white px-4 py-2">TOOLBOX API</span>
+                    <p class="mt-4 text-gray-600">© 2025 Toolbox API. Todos los derechos reservados.</p>
                 </div>
-                <div class="px-5 py-2">
-                    <a href="#features" class="text-base text-gray-300 hover:text-white">
-                        Características
-                    </a>
+                <div class="flex space-x-6">
+                    <a href="#" class="text-gray-600 hover:text-black">Términos</a>
+                    <a href="#" class="text-gray-600 hover:text-black">Privacidad</a>
+                    <a href="#" class="text-gray-600 hover:text-black">Documentación</a>
+                    <a href="#" class="text-gray-600 hover:text-black">Soporte</a>
                 </div>
-                <div class="px-5 py-2">
-                    <a href="#" class="text-base text-gray-300 hover:text-white">
-                        Precios
-                    </a>
-                </div>
-                <div class="px-5 py-2">
-                    <a href="#" class="text-base text-gray-300 hover:text-white">
-                        Blog
-                    </a>
-                </div>
-                <div class="px-5 py-2">
-                    <a href="#" class="text-base text-gray-300 hover:text-white">
-                        Contacto
-                    </a>
-                </div>
-            </nav>
-            <p class="mt-8 text-center text-base text-gray-400">
-                &copy; 2025 MiSitio. Todos los derechos reservados.
-            </p>
+            </div>
         </div>
     </footer>
+
 </body>
 </html>

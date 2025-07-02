@@ -1,8 +1,9 @@
-.PHONY: run stop clean rebuild
+.PHONY: build run stop clean rebuild
 
-run: stop
-	podman machine stop && podman machine start
+build:
 	podman build -t toolbox-api .
+
+run: stop build
 	podman run -d -p 8000:8000 --name toolbox-api toolbox-api
 	@echo "\nAPI running at http://localhost:8000"
 

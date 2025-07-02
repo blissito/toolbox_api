@@ -1,0 +1,51 @@
+# flyctl launch added from .gitignore
+# Binarios para programas
+toolbox-api
+toolbox-api.exe
+
+# Directorio de dependencias
+**/go/pkg
+
+# Binarios de dependencias
+**/go/bin
+
+# Archivos de entorno local
+**/.env
+
+# Archivos generados por el IDE
+**/.idea
+**/.vscode
+**/*.swp
+**/*.swo
+
+# Archivos de sistema operativo
+**/.DS_Store
+**/Thumbs.db
+
+# Archivos de log
+**/*.log
+
+# Directorio de dependencias de módulos de Go
+**/vendor
+
+# Archivos temporales
+**/*.tmp
+**/*.bak
+**/*.swp
+**/*~
+
+# Archivos de configuración local
+**/config.local.*
+
+# Archivos de desarrollo
+**/debug
+
+# Directorio para contenedores
+**/.podman
+
+# Archivos de desarrollo de Podman
+**/*.podman
+
+# Archivos de caché de Go
+.cache
+fly.toml

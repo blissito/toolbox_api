@@ -28,6 +28,7 @@ COPY --from=builder /app/toolbox-api .
 
 # Copiar archivos estáticos
 COPY --from=builder /app/index.html .
+COPY --from=builder /app/docs ./docs
 
 # Puerto expuesto
 EXPOSE 8000

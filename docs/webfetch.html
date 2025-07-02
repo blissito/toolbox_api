@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebFetch Tool - Documentación</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --neon-pink: #ff2e63;
+            --neon-blue: #00f2fe;
+            --black: #0a0a0a;
+            --white: #f8f9fa;
+        }
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background-color: var(--white);
+            color: var(--black);
+            border: 12px solid var(--black);
+            min-height: 100vh;
+        }
+        .neo-btn {
+            background: var(--white);
+            border: 3px solid var(--black);
+            box-shadow: 6px 6px 0 var(--black);
+            transition: all 0.2s ease;
+        }
+        .neo-btn:hover {
+            transform: translate(3px, 3px);
+            box-shadow: 3px 3px 0 var(--black);
+        }
+        .gradient-text {
+            background: linear-gradient(45deg, var(--neon-pink), var(--neon-blue));
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: inline-block;
+        }
+        pre {
+            background-color: #f4f4f4;
+            border: 2px solid var(--black);
+            padding: 1rem;
+            overflow-x: auto;
+            margin: 1rem 0;
+            font-family: 'Courier New', monospace;
+        }
+        .code-block {
+            background-color: #f4f4f4;
+            border: 2px solid var(--black);
+            padding: 1rem;
+            position: relative;
+        }
+        .copy-btn {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: var(--black);
+            color: white;
+            border: none;
+            padding: 0.25rem 0.5rem;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <!-- Navbar -->
+    <nav class="mb-12">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between items-center h-20">
+                <div class="flex items-center">
+                    <a href="/" class="text-2xl font-bold bg-black text-white px-4 py-2">TOOLBOX API</a>
+                </div>
+                <a href="/" class="neo-btn px-6 py-3 font-bold text-lg">
+                    ← Volver al inicio
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-5xl mx-auto px-4">
+        <h1 class="text-4xl md:text-5xl font-bold mb-6">
+            <span class="gradient-text">WebFetch</span> - Documentación
+        </h1>
+        
+        <p class="text-xl mb-8">
+            WebFetch es una herramienta que permite obtener el contenido de cualquier página web en diferentes formatos.
+        </p>
+
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold mb-4">Uso Básico</h2>
+            <p class="mb-4">Realiza una petición POST al endpoint <code>/api/tool</code> con el siguiente formato:</p>
+            
+            <div class="code-block mb-6">
+                <button class="copy-btn" onclick="copyToClipboard('basic-usage')">Copiar</button>
+                <pre id="basic-usage">curl https://toolbox-api.fly.dev/api/tool \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tool": "webfetch",
+    "payload": {
+      "url": "https://example.com",
+      "format": "text",
+      "timeout": 10
+    }
+  }'</pre>
+            </div>
+        </section>
+
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold mb-4">Parámetros</h2>
+            
+            <div class="overflow-x-auto">
+                <table class="min-w-full border-2 border-black">
+                    <thead>
+                        <tr class="bg-black text-white">
+                            <th class="px-4 py-2 text-left">Parámetro</th>
+                            <th class="px-4 py-2 text-left">Tipo</th>
+                            <th class="px-4 py-2 text-left">Requerido</th>
+                            <th class="px-4 py-2 text-left">Descripción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="border-b border-gray-200">
+                            <td class="px-4 py-2 font-mono">url</td>
+                            <td class="px-4 py-2">string</td>
+                            <td class="px-4 py-2">Sí</td>
+                            <td class="px-4 py-2">La URL del sitio web a obtener</td>
+                        </tr>
+                        <tr class="border-b border-gray-200">
+                            <td class="px-4 py-2 font-mono">format</td>
+                            <td class="px-4 py-2">string</td>
+                            <td class="px-4 py-2">No</td>
+                            <td class="px-4 py-2">
+                                Formato de salida: <code>text</code>, <code>markdown</code> o <code>html</code> (por defecto: <code>html</code>)
+                            </td>
+                        </tr>
+                        <tr class="border-b border-gray-200">
+                            <td class="px-4 py-2 font-mono">timeout</td>
+                            <td class="px-4 py-2">number</td>
+                            <td class="px-4 py-2">No</td>
+                            <td class="px-4 py-2">
+                                Tiempo máximo de espera en segundos (máximo: 120)
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold mb-4">Ejemplos</h2>
+            
+            <h3 class="text-xl font-semibold mt-6 mb-2">1. Obtener HTML</h3>
+            <div class="code-block mb-6">
+                <button class="copy-btn" onclick="copyToClipboard('example-html')">Copiar</button>
+                <pre id="example-html">curl https://toolbox-api.fly.dev/api/tool \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tool": "webfetch",
+    "payload": {
+      "url": "https://example.com",
+      "format": "html"
+    }
+  }'</pre>
+            </div>
+
+            <h3 class="text-xl font-semibold mt-6 mb-2">2. Obtener solo texto</h3>
+            <div class="code-block mb-6">
+                <button class="copy-btn" onclick="copyToClipboard('example-text')">Copiar</button>
+                <pre id="example-text">curl https://toolbox-api.fly.dev/api/tool \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tool": "webfetch",
+    "payload": {
+      "url": "https://example.com",
+      "format": "text"
+    }
+  }'</pre>
+            </div>
+
+            <h3 class="text-xl font-semibold mt-6 mb-2">3. Obtener Markdown</h3>
+            <div class="code-block mb-6">
+                <button class="copy-btn" onclick="copyToClipboard('example-markdown')">Copiar</button>
+                <pre id="example-markdown">curl https://toolbox-api.fly.dev/api/tool \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tool": "webfetch",
+    "payload": {
+      "url": "https://example.com",
+      "format": "markdown"
+    }
+  }'</pre>
+            </div>
+        </section>
+
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold mb-4">Respuesta</h2>
+            <p>La API devuelve un objeto JSON con la siguiente estructura:</p>
+            
+            <div class="code-block mb-6">
+                <pre>{
+  "output": "Contenido de la página en el formato solicitado",
+  "metadata": {
+    "title": "URL (content-type)"
+  }
+}</pre>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-16 py-8 border-t-2 border-black">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <p>© 2025 Toolbox API. Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+    <script>
+        function copyToClipboard(elementId) {
+            const element = document.getElementById(elementId);
+            const text = element.textContent || element.innerText;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                const button = event.target;
+                const originalText = button.textContent;
+                button.textContent = '¡Copiado!';
+                
+                setTimeout(() => {
+                    button.textContent = originalText;
+                }, 2000);
+            }).catch(err => {
+                console.error('Error al copiar: ', err);
+            });
+        }
+    </script>
+</body>
+</html>

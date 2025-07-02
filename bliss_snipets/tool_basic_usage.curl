@@ -1,0 +1,10 @@
+curl https://toolbox-api.fly.dev/api/tool \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tool": "webfetch",
+    "payload": {
+      "url": "https://easybits.cloud",
+      "format": "text",
+      "timeout": 10
+    }
+  }'
