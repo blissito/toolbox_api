@@ -26,7 +26,7 @@ make rebuild
 
 ¿No quieres lidiar con el auto-hospedaje? Prueba nuestra versión alojada:
 
-🔜 Próximamente en [toolbox-api.com](https://toolbox-api.com)
+🔜 Próximamente en [toolbox-api.fly.dev](https://toolbox-api.fly.dev)
 
 ## 🧩 Componentes Próximamente
 
