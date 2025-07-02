@@ -1,4 +1,4 @@
-# Toolbox API 🛠️
+# Toolbox API 🛠️ by [@fixtergeek](https://fixter.org)
 
 > **API de herramientas para potenciar tus proyectos de IA y automatización**
 
@@ -39,7 +39,7 @@ make rebuild
 
 ```bash
 # Ejemplo de uso con cURL
-curl -X POST https://api.toolbox.com/v1/agent \
+curl -X POST https://toolbox-api.fly.dev/api/tool \
   -H "Authorization: Bearer TU_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -58,4 +58,4 @@ MIT © [blissito](https://github.com/blissito)
 
 ---
 
-💡 **Nota**: Esta es una versión autohospedable. Para una solución lista para producción sin configuración, visita pronto [toolbox-api.com](https://toolbox-api.com)
+💡 **Nota**: Esta es una versión autohospedable. Para una solución lista para producción sin configuración, visita pronto [toolbox-api.fly.dev](https://toolbox-api.fly.dev)
