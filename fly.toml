@@ -33,17 +33,12 @@ primary_region = 'dfw'
 
 # Configuración del volumen para la base de datos SQLite
 [[mounts]]
-  destination = "/app/data"
   source = "toolbox_data"
+  destination = "/data"
 
 # Configuración de la máquina virtual
 [[vm]]
   size = "shared-cpu-1x"  # Ajusta según necesidades
-  
-  # Montar el volumen en la ruta correcta
-  [[vm.mounts]]
-    volume = "toolbox_data"
-    path = "/app/data"
 
 # Configuración de logs
 [metrics]

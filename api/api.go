@@ -13,6 +13,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/PuerkitoBio/goquery"
+	md "github.com/JohannesKaufmann/html-to-markdown"
+	"github.com/jaytaylor/html2text"
 	"toolbox/auth"
 	"toolbox/email"
 )
@@ -43,6 +46,9 @@ func SetupRoutes(mux *http.ServeMux, database *sql.DB) {
 
 	// Ruta para obtener información del usuario autenticado
 	mux.HandleFunc("/api/auth/me", handleGetCurrentUser)
+
+	// Ruta para herramientas como webfetch
+	mux.HandleFunc("/api/tool", handleTool)
 }
 
 // handleRequestMagicLink maneja la solicitud de un enlace mágico
@@ -302,16 +308,16 @@ func getAuthenticatedEmail(r *http.Request) (string, error) {
 		headerParts := strings.Split(authHeader, " ")
 		if len(headerParts) == 2 && headerParts[0] == "Bearer" {
 			token := headerParts[1]
-			
+
 			// Primero intentar validar como JWT
 			claims, err := auth.ValidateToken(token)
 			if err == nil {
 				return claims.Email, nil
 			}
-			
+
 			// Si no es un JWT válido, intentar como API key
 			apiKey := token
-			
+
 			// Si la clave API tiene el formato ID.tbx_HASH, extraer el ID y el hash
 			var keyID, keyHash string
 			if strings.Contains(apiKey, ".tbx_") {
@@ -324,7 +330,7 @@ func getAuthenticatedEmail(r *http.Request) (string, error) {
 				// Si no tiene el formato esperado, asumir que es solo el ID
 				keyID = apiKey
 			}
-			
+
 			// Buscar el usuario por API key
 			var email string
 			err = db.QueryRow(
@@ -573,3 +579,297 @@ func respondJSON(w http.ResponseWriter, status int, data interface{}) {
 	w.WriteHeader(status)
 	json.NewEncoder(w).Encode(data)
 }
+
+// handleTool maneja las solicitudes a /api/tool
+func handleTool(w http.ResponseWriter, r *http.Request) {
+	// Configurar el tipo de contenido de la respuesta
+	w.Header().Set("Content-Type", "application/json")
+
+	// Solo permitir método POST
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": false,
+			"error":   "Método no permitido. Se requiere POST",
+			"code":    "method_not_allowed",
+		})
+		return
+	}
+
+	// Verificar autenticación
+	email, err := getAuthenticatedEmail(r)
+	if err != nil {
+		// Determinar el tipo de error de autenticación
+		errMsg := "Se requiere autenticación"
+		errCode := "unauthorized"
+		statusCode := http.StatusUnauthorized
+
+		// Si el token es inválido o ha expirado
+		if err == sql.ErrNoRows || err.Error() == "token expirado" {
+			errMsg = "Token inválido o expirado"
+			errCode = "invalid_token"
+		}
+
+		// Si es una solicitud AJAX, devolver un error JSON
+		w.WriteHeader(statusCode)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success":  false,
+			"error":    errMsg,
+			"code":     errCode,
+			"redirect": "/login?redirect=" + url.QueryEscape(r.URL.Path),
+		})
+		return
+	}
+
+	// Registrar el uso de la API para métricas
+	_, _ = db.Exec("UPDATE api_keys SET last_used_at = datetime('now') WHERE user_id = (SELECT id FROM users WHERE email = ?)", email)
+
+	// Decodificar el cuerpo de la solicitud
+	var req struct {
+		Tool    string                 `json:"tool"`
+		Payload map[string]interface{} `json:"payload"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": false,
+			"error":   "Error al decodificar el cuerpo de la solicitud",
+			"code":    "invalid_request",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	// Verificar que se proporcionó una herramienta
+	if req.Tool == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": false,
+			"error":   "Se requiere el campo 'tool' en la solicitud",
+			"code":    "missing_required_field",
+			"field":   "tool",
+		})
+		return
+	}
+
+	// Manejar diferentes herramientas
+	switch req.Tool {
+	case "webfetch":
+		handleWebFetch(w, req.Payload)
+	default:
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": false,
+			"error":   "Herramienta no soportada",
+			"code":    "unsupported_tool",
+			"tool":    req.Tool,
+		})
+	}
+}
+
+// handleWebFetch maneja la herramienta webfetch
+func handleWebFetch(w http.ResponseWriter, payload map[string]interface{}) {
+	// Función para enviar errores estandarizados
+	sendError := func(statusCode int, code, message string, details ...interface{}) {
+		w.WriteHeader(statusCode)
+		errResponse := map[string]interface{}{
+			"success": false,
+			"error":   message,
+			"code":    code,
+		}
+
+		// Agregar detalles adicionales si se proporcionan
+		if len(details) > 0 {
+			errResponse["details"] = details[0]
+		}
+
+		json.NewEncoder(w).Encode(errResponse)
+	}
+
+	// Obtener la URL del payload
+	urlStr, ok := payload["url"].(string)
+	if !ok || urlStr == "" {
+		sendError(http.StatusBadRequest, "missing_url", "Se requiere el parámetro 'url' en el payload", map[string]string{
+			"field":   "url",
+			"message": "El campo 'url' es requerido y no puede estar vacío",
+		})
+		return
+	}
+
+	// Validar la URL
+	parsedURL, err := url.ParseRequestURI(urlStr)
+	if err != nil || (parsedURL.Scheme != "http" && parsedURL.Scheme != "https") {
+		sendError(http.StatusBadRequest, "invalid_url", "URL inválida. Debe comenzar con http:// o https://", map[string]string{
+			"url":      urlStr,
+			"expected": "URL debe comenzar con http:// o https://",
+		})
+		return
+	}
+
+	// Obtener el formato (opcional, por defecto "html")
+	format := "html"
+	if f, ok := payload["format"].(string); ok && f != "" {
+		switch f {
+		case "text", "markdown", "html":
+			format = f
+		default:
+			sendError(http.StatusBadRequest, "invalid_format", "Formato no válido. Use 'text', 'markdown' o 'html'", map[string]interface{}{
+				"format":   f,
+				"accepted": []string{"text", "markdown", "html"},
+			})
+			return
+		}
+	}
+
+	// Obtener el timeout (opcional, por defecto 30 segundos)
+	timeout := 30
+	if t, ok := payload["timeout"].(float64); ok && t > 0 {
+		timeout = int(t)
+		if timeout > 120 { // Máximo 2 minutos
+			timeout = 120
+		}
+	}
+
+	// Configurar el cliente HTTP con timeout
+	client := &http.Client{
+		Timeout: time.Duration(timeout) * time.Second,
+	}
+
+	// Crear la solicitud
+	req, err := http.NewRequest("GET", urlStr, nil)
+	if err != nil {
+		sendError(http.StatusInternalServerError, "request_creation_failed", "Error al crear la solicitud HTTP", map[string]string{
+			"details": err.Error(),
+		})
+		return
+	}
+
+	// Añadir headers para parecer un navegador
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
+	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
+	req.Header.Set("Accept-Language", "es-ES,es;q=0.8,en-US;q=0.5,en;q=0.3")
+	req.Header.Set("Cache-Control", "no-cache")
+	req.Header.Set("Pragma", "no-cache")
+
+	// Realizar la petición
+	resp, err := client.Do(req)
+	if err != nil {
+		sendError(http.StatusBadGateway, "request_failed", "No se pudo completar la solicitud al servidor remoto", map[string]string{
+			"url":     urlStr,
+			"details": err.Error(),
+		})
+		return
+	}
+	defer resp.Body.Close()
+
+	// Leer el cuerpo de la respuesta
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		sendError(http.StatusInternalServerError, "read_response_failed", "Error al leer la respuesta del servidor remoto", map[string]string{
+			"details": err.Error(),
+		})
+		return
+	}
+
+	// Determinar el tipo de contenido
+	contentType := resp.Header.Get("Content-Type")
+	isHTML := strings.Contains(contentType, "text/html") || strings.Contains(contentType, "application/xhtml+xml")
+
+	// Convertir el contenido según el formato solicitado
+	var result string
+	var conversionError error
+
+	switch format {
+	case "html":
+		result = string(body)
+	case "markdown":
+		if isHTML {
+			converter := md.NewConverter("", true, nil)
+			result, conversionError = converter.ConvertString(string(body))
+		} else {
+			result = string(body)
+		}
+	case "text":
+		if isHTML {
+			result, conversionError = html2text.FromString(string(body), html2text.Options{
+				PrettyTables: true,
+				TextOnly:     true,
+			})
+		} else {
+			result = string(body)
+		}
+	}
+
+	// Manejar errores de conversión
+	if conversionError != nil {
+		// Si hay un error en la conversión, devolver el contenido original
+		result = string(body)
+	}
+
+	// Extraer metadatos de la página
+	metadata := map[string]interface{}{
+		"url":           urlStr,
+		"format":        format,
+		"content_type":  contentType,
+		"status_code":   resp.StatusCode,
+		"content_length": len(body),
+	}
+
+	// Si es HTML, extraer metadatos adicionales
+	if isHTML {
+		doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(body)))
+		if err == nil {
+			// Extraer título
+			if title := doc.Find("title").First().Text(); title != "" {
+				metadata["title"] = strings.TrimSpace(title)
+			}
+
+			// Extraer imagen de Open Graph (og:image)
+			if ogImage, exists := doc.Find("meta[property='og:image']").First().Attr("content"); exists && ogImage != "" {
+				metadata["image"] = ogImage
+			} else if twitterImage, exists := doc.Find("meta[name='twitter:image']").First().Attr("content"); exists && twitterImage != "" {
+				// Si no hay og:image, intentar con twitter:image
+				metadata["image"] = twitterImage
+			} else if icon := doc.Find("link[rel*='icon']").First(); icon != nil {
+				// Si no hay imágenes en meta tags, usar el favicon
+				if iconHref, exists := icon.Attr("href"); exists && iconHref != "" {
+					// Convertir a URL absoluta si es relativa
+					if base, err := url.Parse(urlStr); err == nil {
+						if iconURL, err := base.Parse(iconHref); err == nil {
+							metadata["image"] = iconURL.String()
+						}
+					}
+				}
+			}
+
+			// Extraer descripción si está disponible
+			if desc, exists := doc.Find("meta[property='og:description']").First().Attr("content"); exists && desc != "" {
+				metadata["description"] = strings.TrimSpace(desc)
+			} else if desc, exists := doc.Find("meta[name='description']").First().Attr("content"); exists && desc != "" {
+				metadata["description"] = strings.TrimSpace(desc)
+			}
+		}
+	}
+
+	// Crear la respuesta exitosa
+	response := map[string]interface{}{
+		"success":  true,
+		"output":   result,
+		"metadata": metadata,
+	}
+
+	// Si hubo un error de conversión, incluirlo como advertencia
+	if conversionError != nil {
+		response["warning"] = map[string]string{
+			"code":    "conversion_warning",
+			"message": "Se produjo un error al convertir el contenido",
+			"details": conversionError.Error(),
+		}
+	}
+
+	// Enviar la respuesta como JSON
+	json.NewEncoder(w).Encode(response)
+}
+
+// ...

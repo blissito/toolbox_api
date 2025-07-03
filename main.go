@@ -69,8 +69,8 @@ func main() {
 	// Configurar ruta de la base de datos
 	var dbPath string
 	if os.Getenv("FLY") == "true" {
-		// En producción (Fly.io), usar ruta absoluta
-		dbPath = "/app/data/toolbox.db"
+		// En producción (Fly.io), usar ruta del volumen
+		dbPath = "/data/toolbox.db"
 	} else {
 		// En desarrollo, usar ruta relativa
 		dbPath = "data/toolbox.db"

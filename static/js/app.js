@@ -646,8 +646,14 @@ function App() {
               className: 'text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent'
             }, 'Toolbox API'),
             
-            isAuthenticated && h('div', { className: 'flex items-center space-x-4' },
+            isAuthenticated && h('div', { className: 'flex items-center space-x-6' },
               [
+                h('a', { 
+                  href: '/docs/webfetch', 
+                  target: '_blank',
+                  className: 'text-sm font-medium text-indigo-600 hover:text-indigo-800 hover:underline',
+                  title: 'Documentación de la API'
+                }, 'Documentación'),
                 h('span', { className: 'text-sm font-medium text-gray-800' }, `Hola, ${userEmail}`),
                 h('button', {
                   onClick: handleLogout,

@@ -91,12 +91,13 @@
 
         <section class="mb-12">
             <h2 class="text-2xl font-bold mb-4">Uso Básico</h2>
-            <p class="mb-4">Realiza una petición POST al endpoint <code>/api/tool</code> con el siguiente formato:</p>
+            <p class="mb-4">Realiza una petición POST al endpoint <code>/api/tool</code> con el siguiente formato. <strong>Nota:</strong> Necesitarás incluir tu clave API en el encabezado de autorización.</p>
             
             <div class="code-block mb-6">
                 <button class="copy-btn" onclick="copyToClipboard('basic-usage')">Copiar</button>
                 <pre id="basic-usage">curl https://toolbox-api.fly.dev/api/tool \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer TU_CLAVE_API_AQUI" \
   -d '{
     "tool": "webfetch",
     "payload": {
@@ -144,6 +145,14 @@
                                 Tiempo máximo de espera en segundos (máximo: 120)
                             </td>
                         </tr>
+                        <tr class="border-b border-gray-200">
+                            <td class="px-4 py-2 font-mono">Authorization</td>
+                            <td class="px-4 py-2">string</td>
+                            <td class="px-4 py-2">Sí</td>
+                            <td class="px-4 py-2">
+                                Token de autorización en formato <code>Bearer TU_CLAVE_API</code>
+                            </td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -157,6 +166,7 @@
                 <button class="copy-btn" onclick="copyToClipboard('example-html')">Copiar</button>
                 <pre id="example-html">curl https://toolbox-api.fly.dev/api/tool \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer TU_CLAVE_API_AQUI" \
   -d '{
     "tool": "webfetch",
     "payload": {
@@ -171,6 +181,7 @@
                 <button class="copy-btn" onclick="copyToClipboard('example-text')">Copiar</button>
                 <pre id="example-text">curl https://toolbox-api.fly.dev/api/tool \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer TU_CLAVE_API_AQUI" \
   -d '{
     "tool": "webfetch",
     "payload": {
@@ -181,10 +192,12 @@
             </div>
 
             <h3 class="text-xl font-semibold mt-6 mb-2">3. Obtener Markdown</h3>
+            <p class="mb-4">Recuerda incluir tu token de autorización en todas las peticiones:</p>
             <div class="code-block mb-6">
                 <button class="copy-btn" onclick="copyToClipboard('example-markdown')">Copiar</button>
                 <pre id="example-markdown">curl https://toolbox-api.fly.dev/api/tool \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer TU_CLAVE_API_AQUI" \
   -d '{
     "tool": "webfetch",
     "payload": {

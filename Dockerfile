@@ -58,14 +58,15 @@ COPY --from=builder --chown=appuser:appgroup /app/static/ /app/static/
 COPY --from=builder --chown=appuser:appgroup /app/home.html /app/
 COPY --from=builder --chown=appuser:appgroup /app/docs/ /app/docs/
 
+# Copiar el script de inicialización
+COPY --chown=appuser:appgroup init-db.sh /app/
+
 # Asegurar que los directorios tengan los permisos correctos
 RUN chmod -R 755 /app/static && \
     chmod 755 /app/home.html && \
     chmod -R 755 /app/docs && \
-    chmod +x /app/toolbox-api
-
-# Usar el usuario no root
-USER appuser
+    chmod +x /app/toolbox-api && \
+    chmod +x /app/init-db.sh
 
 # Puerto expuesto
 EXPOSE 8000
@@ -74,5 +75,9 @@ EXPOSE 8000
 ENV TZ=UTC \
     PORT=8000
 
-# Comando por defecto
-CMD ["/app/toolbox-api"]
+# Comando por defecto con inicialización
+ENTRYPOINT ["/app/init-db.sh"]
+
+# Ejecutar como root para tener permisos de sistema de archivos
+# La aplicación se cambiará a appuser dentro del script init-db.sh
+CMD ["su", "-c", "/app/toolbox-api", "appuser"]
