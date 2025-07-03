@@ -6,6 +6,8 @@
   <title>Toolbox API - Dashboard</title>
   <script src="https://unpkg.com/htmx.org@1.9.6"></script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/preact@10.15.1/dist/preact.umd.js"></script>
+  <script src="https://unpkg.com/preact@10.15.1/hooks/dist/hooks.umd.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     body {
@@ -60,79 +62,285 @@
   </style>
 </head>
 <body class="min-h-screen flex items-center justify-center p-4">
-  <div class="w-full max-w-2xl">
+  <div id="app" class="w-full max-w-2xl">
     <div class="neo-card p-8 mb-8">
       <h1 class="text-3xl font-bold mb-6 text-center">Dashboard de API</h1>
-      
-      <div class="mb-8">
-        <h2 class="text-xl font-semibold mb-4">Tu API Key</h2>
-        <div class="flex items-center gap-2 mb-4">
-          <input 
-            type="password" 
-            id="apiKey" 
-            value="sk_test_51PJwJjKpXr9XhYF..." 
-            readonly 
-            class="neo-input flex-1 api-key-display"
-          >
-          <button 
-            onclick="toggleApiKey()" 
-            class="p-2 rounded-md hover:bg-gray-100 transition-colors"
-            aria-label="Mostrar/ocultar API Key"
-          >
-            <i class="far fa-eye"></i>
-          </button>
-        </div>
-        <p class="text-sm text-gray-600 mb-4">
-          No compartas tu API Key con nadie. Si crees que ha sido comprometida, genera una nueva.
-        </p>
-        <button class="neo-btn bg-red-500 hover:bg-red-600">
-          <i class="fas fa-sync-alt mr-2"></i>Regenerar API Key
-        </button>
-      </div>
-      
-      <div class="border-t border-gray-200 pt-6">
-        <h2 class="text-xl font-semibold mb-4">Documentación</h2>
-        <div class="space-y-4">
-          <div class="p-4 bg-gray-50 rounded-lg">
-            <h3 class="font-medium mb-2">Endpoint Base</h3>
-            <code class="bg-gray-100 p-2 rounded text-sm block overflow-x-auto">https://api.toolbox.com/v1/</code>
-          </div>
-          <div class="p-4 bg-gray-50 rounded-lg">
-            <h3 class="font-medium mb-2">Autenticación</h3>
-            <p class="text-sm mb-2">Incluye tu API Key en el encabezado de la solicitud:</p>
-            <code class="bg-gray-100 p-2 rounded text-sm block overflow-x-auto">Authorization: Bearer &lt;tu_api_key&gt;</code>
-          </div>
-        </div>
-      </div>
+      <!-- App will be rendered here by Preact -->
     </div>
   </div>
 
   <script>
-    function toggleApiKey() {
-      const apiKeyInput = document.getElementById('apiKey');
-      const eyeIcon = document.querySelector('#apiKey + button i');
-      
-      if (apiKeyInput.type === 'password') {
-        apiKeyInput.type = 'text';
-        eyeIcon.classList.remove('fa-eye');
-        eyeIcon.classList.add('fa-eye-slash');
+    // Función para inicializar la aplicación
+    function initApp() {
+      // Verificar que Preact esté disponible
+      if (typeof window.preact === 'undefined' || typeof window.preactHooks === 'undefined') {
+        console.error('Preact no está disponible');
+        return;
+      }
+
+      const { h, render } = window.preact;
+      const { useState, useEffect } = window.preactHooks;
+
+      // API Service
+      const apiService = {
+        async checkAuth() {
+          try {
+            const response = await fetch('/api/auth/me', {
+              credentials: 'include'
+            });
+            if (!response.ok) throw new Error('Not authenticated');
+            return await response.json();
+          } catch (error) {
+            throw error;
+          }
+        },
+
+        async getApiKeys() {
+          const response = await fetch('/api/keys/list', {
+            credentials: 'include'
+          });
+          if (!response.ok) throw new Error('Failed to fetch API keys');
+          return await response.json();
+        },
+
+        async createApiKey() {
+          const response = await fetch('/api/keys/create', {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+          if (!response.ok) throw new Error('Failed to create API key');
+          return await response.json();
+        },
+
+        async revokeApiKey(id) {
+          const response = await fetch(`/api/keys/revoke/${id}`, {
+            method: 'POST',
+            credentials: 'include',
+          });
+          if (!response.ok) throw new Error('Failed to revoke API key');
+          return await response.json();
+        }
+      };
+
+      // API Key Component
+      function ApiKeySection({ isAuthenticated }) {
+        const [apiKey, setApiKey] = useState('');
+        const [showKey, setShowKey] = useState(false);
+        const [error, setError] = useState(null);
+
+        useEffect(() => {
+          if (isAuthenticated) {
+            loadApiKey();
+          }
+        }, [isAuthenticated]);
+
+        const loadApiKey = async () => {
+          try {
+            const data = await apiService.getApiKeys();
+            if (data && data.length > 0) {
+              setApiKey(data[0].key);
+            }
+          } catch (err) {
+            setError('Error loading API key');
+            console.error(err);
+          }
+        };
+
+        const handleCreateKey = async () => {
+          try {
+            const data = await apiService.createApiKey();
+            setApiKey(data.key);
+            setError(null);
+          } catch (err) {
+            setError('Error creating API key');
+            console.error(err);
+          }
+        };
+
+        const handleRegenerateKey = async () => {
+          if (confirm('¿Estás seguro de que deseas regenerar tu API Key? La clave actual dejará de funcionar.')) {
+            try {
+              // Get current keys to find the ID
+              const currentKeys = await apiService.getApiKeys();
+              if (currentKeys && currentKeys.length > 0) {
+                await apiService.revokeApiKey(currentKeys[0].id);
+              }
+              const data = await apiService.createApiKey();
+              setApiKey(data.key);
+              setError(null);
+            } catch (err) {
+              setError('Error regenerating API key');
+              console.error(err);
+            }
+          }
+        };
+
+        const copyToClipboard = () => {
+          navigator.clipboard.writeText(apiKey);
+          alert('API Key copiada al portapapeles');
+        };
+
+        if (!isAuthenticated) {
+          return (
+            h('div', { className: 'text-center py-8' },
+              h('p', { className: 'mb-4' }, 'Debes iniciar sesión para acceder a tu API Key'),
+              h('button', {
+                className: 'neo-btn',
+                onClick: () => window.location.href = '/login'
+              }, 'Iniciar sesión')
+            )
+          );
+        }
+
+        if (error) {
+          return (
+            h('div', { className: 'text-center py-8 text-red-600' },
+              h('p', { className: 'mb-4' }, error),
+              h('button', {
+                className: 'neo-btn',
+                onClick: loadApiKey
+              }, 'Reintentar')
+            )
+          );
+        }
+
+        if (!apiKey) {
+          return (
+            h('div', { className: 'text-center py-8' },
+              h('p', { className: 'mb-4' }, 'No tienes una API Key generada.'),
+              h('button', {
+                className: 'neo-btn',
+                onClick: handleCreateKey
+              }, 'Generar API Key')
+            )
+          );
+        }
+
+        return (
+          h('div', { className: 'space-y-4 mb-8' },
+            h('h2', { className: 'text-xl font-semibold mb-4' }, 'Tu API Key'),
+            h('div', { className: 'flex items-center gap-2 mb-4' },
+              h('div', { className: 'relative flex-1' },
+                h('input', {
+                  id: 'apiKey',
+                  type: showKey ? 'text' : 'password',
+                  value: apiKey,
+                  readOnly: true,
+                  className: 'w-full neo-input api-key-display',
+                  style: { paddingRight: '2.5rem' }
+                }),
+                h('button', {
+                  className: 'absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-600 hover:text-gray-800',
+                  onClick: () => setShowKey(!showKey),
+                  type: 'button',
+                  'aria-label': showKey ? 'Ocultar clave' : 'Mostrar clave'
+                }, h('i', { className: showKey ? 'fas fa-eye-slash' : 'fas fa-eye' }))
+              ),
+              h('button', {
+                className: 'neo-btn bg-blue-600',
+                onClick: copyToClipboard,
+                type: 'button'
+              }, h('i', { className: 'fas fa-copy mr-2' }), 'Copiar')
+            ),
+            h('div', { className: 'flex justify-end' },
+              h('button', {
+                className: 'neo-btn bg-red-500 hover:bg-red-600',
+                onClick: handleRegenerateKey,
+                type: 'button'
+              }, h('i', { className: 'fas fa-sync-alt mr-2' }), 'Regenerar')
+            )
+          )
+        );
+      }
+
+      // Documentation Component
+      function DocumentationSection() {
+        return (
+          h('div', { className: 'border-t border-gray-200 pt-6' },
+            h('h2', { className: 'text-xl font-semibold mb-4' }, 'Documentación'),
+            h('div', { className: 'space-y-4' },
+              h('div', { className: 'p-4 bg-gray-50 rounded-lg' },
+                h('h3', { className: 'font-medium mb-2' }, 'Endpoint Base'),
+                h('code', { className: 'bg-gray-100 p-2 rounded text-sm block overflow-x-auto' },
+                  'https://toolbox-api.fly.dev/api/tool'
+                )
+              ),
+              h('div', { className: 'p-4 bg-gray-50 rounded-lg' },
+                h('h3', { className: 'font-medium mb-2' }, 'Autenticación'),
+                h('p', { className: 'text-sm mb-2' }, 'Incluye tu API Key en el encabezado de la solicitud:'),
+                h('code', { className: 'bg-gray-100 p-2 rounded text-sm block overflow-x-auto' },
+                  'Authorization: Bearer <tu_api_key>'
+                )
+              )
+            )
+          )
+        );
+      }
+
+      // Main App Component
+      function App() {
+        const [isAuthenticated, setIsAuthenticated] = useState(false);
+        const [authChecked, setAuthChecked] = useState(false);
+
+        useEffect(() => {
+          const checkAuth = async () => {
+            try {
+              await apiService.checkAuth();
+              setIsAuthenticated(true);
+            } catch (error) {
+              setIsAuthenticated(false);
+            } finally {
+              setAuthChecked(true);
+            }
+          };
+
+          checkAuth();
+        }, []);
+
+        // Don't render anything until auth is checked
+        if (!authChecked) {
+          return null;
+        }
+
+        return (
+          h('div', { className: 'space-y-8' },
+            h(ApiKeySection, { isAuthenticated }),
+            h(DocumentationSection)
+          )
+        );
+      }
+
+      // Render the app
+      const appContainer = document.querySelector('#app .neo-card');
+      if (appContainer) {
+        // Clear existing content except the title
+        const title = appContainer.querySelector('h1');
+        appContainer.innerHTML = '';
+        if (title) {
+          appContainer.appendChild(title);
+        }
+        
+        // Create a container for the app
+        const appDiv = document.createElement('div');
+        appContainer.appendChild(appDiv);
+        
+        // Render the app
+        render(h(App), appDiv);
+        console.log('App renderizada correctamente');
       } else {
-        apiKeyInput.type = 'password';
-        eyeIcon.classList.remove('fa-eye-slash');
-        eyeIcon.classList.add('fa-eye');
+        console.error('No se encontró el contenedor #app .neo-card');
       }
     }
 
-    // Función para regenerar la API Key
-    function regenerateApiKey() {
-      if (confirm('¿Estás seguro de que deseas regenerar tu API Key? La clave actual dejará de funcionar.')) {
-        // Aquí iría la lógica para regenerar la API Key
-        alert('API Key regenerada con éxito');
-      }
+    // Inicializar cuando todo esté listo
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initApp);
+    } else {
+      initApp();
     }
-
-    // Asignar el evento al botón de regenerar
-    document.querySelector('.neo-btn.bg-red-500').addEventListener('click', regenerateApiKey);
   </script>
 </body>
 </html>
