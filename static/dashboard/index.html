@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Toolbox API - Dashboard</title>
+  <script src="https://unpkg.com/htmx.org@1.9.6"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: #f0f0f0;
+    }
+    .neo-card {
+      background: #FFFFFF;
+      border: 3px solid #000000;
+      border-radius: 12px;
+      box-shadow: 8px 8px 0 #000000;
+      transition: all 0.2s ease;
+    }
+    .neo-card:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 10px 10px 0 #000000;
+    }
+    .neo-btn {
+      background: #4F46E5;
+      color: white;
+      border: 2px solid #000000;
+      border-radius: 8px;
+      box-shadow: 4px 4px 0 #000000;
+      transition: all 0.2s ease;
+      font-weight: 600;
+      padding: 0.5rem 1rem;
+    }
+    .neo-btn:hover:not(:disabled) {
+      transform: translate(-1px, -1px);
+      box-shadow: 5px 5px 0 #000000;
+    }
+    .neo-btn:active:not(:disabled) {
+      transform: translate(1px, 1px);
+      box-shadow: 3px 3px 0 #000000;
+    }
+    .neo-input {
+      border: 2px solid #000000;
+      border-radius: 8px;
+      padding: 0.5rem 1rem;
+      box-shadow: 3px 3px 0 #000000;
+      transition: all 0.2s ease;
+    }
+    .neo-input:focus {
+      outline: none;
+      border-color: #4F46E5;
+      box-shadow: 3px 3px 0 #4F46E5;
+    }
+    .api-key-display {
+      letter-spacing: 1px;
+      font-family: 'Courier New', monospace;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+  <div class="w-full max-w-2xl">
+    <div class="neo-card p-8 mb-8">
+      <h1 class="text-3xl font-bold mb-6 text-center">Dashboard de API</h1>
+      
+      <div class="mb-8">
+        <h2 class="text-xl font-semibold mb-4">Tu API Key</h2>
+        <div class="flex items-center gap-2 mb-4">
+          <input 
+            type="password" 
+            id="apiKey" 
+            value="sk_test_51PJwJjKpXr9XhYF..." 
+            readonly 
+            class="neo-input flex-1 api-key-display"
+          >
+          <button 
+            onclick="toggleApiKey()" 
+            class="p-2 rounded-md hover:bg-gray-100 transition-colors"
+            aria-label="Mostrar/ocultar API Key"
+          >
+            <i class="far fa-eye"></i>
+          </button>
+        </div>
+        <p class="text-sm text-gray-600 mb-4">
+          No compartas tu API Key con nadie. Si crees que ha sido comprometida, genera una nueva.
+        </p>
+        <button class="neo-btn bg-red-500 hover:bg-red-600">
+          <i class="fas fa-sync-alt mr-2"></i>Regenerar API Key
+        </button>
+      </div>
+      
+      <div class="border-t border-gray-200 pt-6">
+        <h2 class="text-xl font-semibold mb-4">Documentación</h2>
+        <div class="space-y-4">
+          <div class="p-4 bg-gray-50 rounded-lg">
+            <h3 class="font-medium mb-2">Endpoint Base</h3>
+            <code class="bg-gray-100 p-2 rounded text-sm block overflow-x-auto">https://api.toolbox.com/v1/</code>
+          </div>
+          <div class="p-4 bg-gray-50 rounded-lg">
+            <h3 class="font-medium mb-2">Autenticación</h3>
+            <p class="text-sm mb-2">Incluye tu API Key en el encabezado de la solicitud:</p>
+            <code class="bg-gray-100 p-2 rounded text-sm block overflow-x-auto">Authorization: Bearer &lt;tu_api_key&gt;</code>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function toggleApiKey() {
+      const apiKeyInput = document.getElementById('apiKey');
+      const eyeIcon = document.querySelector('#apiKey + button i');
+      
+      if (apiKeyInput.type === 'password') {
+        apiKeyInput.type = 'text';
+        eyeIcon.classList.remove('fa-eye');
+        eyeIcon.classList.add('fa-eye-slash');
+      } else {
+        apiKeyInput.type = 'password';
+        eyeIcon.classList.remove('fa-eye-slash');
+        eyeIcon.classList.add('fa-eye');
+      }
+    }
+
+    // Función para regenerar la API Key
+    function regenerateApiKey() {
+      if (confirm('¿Estás seguro de que deseas regenerar tu API Key? La clave actual dejará de funcionar.')) {
+        // Aquí iría la lógica para regenerar la API Key
+        alert('API Key regenerada con éxito');
+      }
+    }
+
+    // Asignar el evento al botón de regenerar
+    document.querySelector('.neo-btn.bg-red-500').addEventListener('click', regenerateApiKey);
+  </script>
+</body>
+</html>

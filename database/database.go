@@ -42,3 +42,32 @@ func Close(db *sql.DB) error {
 	}
 	return nil
 }
+
+// NewInMemoryDB crea una nueva base de datos en memoria SQLite para tests
+func NewInMemoryDB() (*DBWrapper, error) {
+	db, err := sql.Open("sqlite", ":memory:")
+	if err != nil {
+		return nil, fmt.Errorf("error al crear base de datos en memoria: %v", err)
+	}
+
+	// Configurar la base de datos para mejor rendimiento
+	if _, err := db.Exec(`
+		PRAGMA journal_mode = MEMORY;
+		PRAGMA synchronous = OFF;
+		PRAGMA foreign_keys = ON;
+	`); err != nil {
+		return nil, fmt.Errorf("error al configurar la base de datos en memoria: %v", err)
+	}
+
+	// Verificar la conexión
+	if err := db.Ping(); err != nil {
+		return nil, fmt.Errorf("error al hacer ping a la base de datos en memoria: %v", err)
+	}
+
+	return &DBWrapper{DB: db}, nil
+}
+
+// DBWrapper es un wrapper para la base de datos
+type DBWrapper struct {
+	*sql.DB
+}

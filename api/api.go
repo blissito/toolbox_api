@@ -13,11 +13,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/PuerkitoBio/goquery"
-	md "github.com/JohannesKaufmann/html-to-markdown"
-	"github.com/jaytaylor/html2text"
 	"toolbox/auth"
 	"toolbox/email"
+
+	md "github.com/JohannesKaufmann/html-to-markdown"
+	"github.com/PuerkitoBio/goquery"
+	"github.com/jaytaylor/html2text"
 )
 
 var db *sql.DB
@@ -809,10 +810,10 @@ func handleWebFetch(w http.ResponseWriter, payload map[string]interface{}) {
 
 	// Extraer metadatos de la página
 	metadata := map[string]interface{}{
-		"url":           urlStr,
-		"format":        format,
-		"content_type":  contentType,
-		"status_code":   resp.StatusCode,
+		"url":            urlStr,
+		"format":         format,
+		"content_type":   contentType,
+		"status_code":    resp.StatusCode,
 		"content_length": len(body),
 	}
 

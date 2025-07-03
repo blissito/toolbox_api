@@ -65,14 +65,14 @@ func createTables() error {
 			email TEXT UNIQUE NOT NULL,
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)`,
-		
+
 		`CREATE TABLE IF NOT EXISTS magic_tokens (
 			token TEXT PRIMARY KEY,
 			email TEXT NOT NULL,
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 			FOREIGN KEY (email) REFERENCES users(email) ON DELETE CASCADE
 		)`,
-		
+
 		`CREATE TABLE IF NOT EXISTS api_keys (
 			id TEXT PRIMARY KEY,
 			user_id INTEGER NOT NULL,
@@ -196,9 +196,9 @@ func CreateMagicToken(email, token string) error {
 
 	// Insertar nuevo token con fecha de expiración
 	_, err = DB.Exec(
-		"INSERT INTO magic_tokens (token, user_id, expires_at) VALUES (?, ?, ?)", 
-		token, 
-		userID, 
+		"INSERT INTO magic_tokens (token, user_id, expires_at) VALUES (?, ?, ?)",
+		token,
+		userID,
 		expiresAt,
 	)
 	if err != nil {
@@ -316,7 +316,7 @@ func GetAPIKeys(userID int) ([]APIKey, error) {
 			revoked
 		FROM api_keys 
 		WHERE user_id = ? 
-		ORDER BY created_at DESC`, 
+		ORDER BY created_at DESC`,
 		userID,
 	)
 
@@ -375,33 +375,33 @@ func respondJSON(w http.ResponseWriter, status int, data interface{}) {
 
 // RevokeAPIKey revoca una clave API
 func RevokeAPIKey(userID int, keyID string) error {
-    // Verificar que el usuario sea el propietario de la clave
-    var dbUserID int
-    err := DB.QueryRow(
-        "SELECT user_id FROM api_keys WHERE id = ?",
-        keyID,
-    ).Scan(&dbUserID)
+	// Verificar que el usuario sea el propietario de la clave
+	var dbUserID int
+	err := DB.QueryRow(
+		"SELECT user_id FROM api_keys WHERE id = ?",
+		keyID,
+	).Scan(&dbUserID)
 
-    if err != nil {
-        if err == sql.ErrNoRows {
-            return fmt.Errorf("clave API no encontrada")
-        }
-        return fmt.Errorf("error al verificar la clave API: %v", err)
-    }
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return fmt.Errorf("clave API no encontrada")
+		}
+		return fmt.Errorf("error al verificar la clave API: %v", err)
+	}
 
-    if dbUserID != userID {
-        return fmt.Errorf("no autorizado para revocar esta clave")
-    }
+	if dbUserID != userID {
+		return fmt.Errorf("no autorizado para revocar esta clave")
+	}
 
-    // Actualizar la clave como revocada
-    _, err = DB.Exec(
-        "UPDATE api_keys SET revoked = 1, last_used_at = CURRENT_TIMESTAMP WHERE id = ?",
-        keyID,
-    )
+	// Actualizar la clave como revocada
+	_, err = DB.Exec(
+		"UPDATE api_keys SET revoked = 1, last_used_at = CURRENT_TIMESTAMP WHERE id = ?",
+		keyID,
+	)
 
-    if err != nil {
-        return fmt.Errorf("error al revocar la clave API: %v", err)
-    }
+	if err != nil {
+		return fmt.Errorf("error al revocar la clave API: %v", err)
+	}
 
-    return nil
+	return nil
 }

@@ -4,42 +4,204 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Toolbox API - Dashboard</title>
-    <!-- Preact -->
-    <script src="https://unpkg.com/preact@10.11.0/dist/preact.umd.js"></script>
-    <script src="https://unpkg.com/preact@10.11.0/hooks/dist/hooks.umd.js"></script>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Preact -->
+    <script src="https://unpkg.com/preact@10.15.1/dist/preact.umd.js"></script>
+    <script src="https://unpkg.com/preact@10.15.1/hooks/dist/hooks.umd.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background-color: #f8f9fa;
+            color: #0a0a0a;
+            line-height: 1.5;
+        }
+        
+        .key-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+        
+        .key-card {
+            background: white;
+            padding: 1.5rem;
+            position: relative;
+            transition: all 0.2s ease;
+            border: 2px solid #000;
+            box-shadow: 6px 6px 0 #000;
+            background-color: #fff;
+        }
+        
+        .key-card:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 8px 8px 0 #000;
+        }
+        
+        .key-card::before {
+            content: '';
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            right: -4px;
+            bottom: -4px;
+            background: #000;
+            z-index: -1;
+            transition: all 0.2s ease;
+        }
+        
+        .key-card:hover::before {
+            top: 2px;
+            left: 2px;
+            right: -2px;
+            bottom: -2px;
+        }
+        
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(2px);
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border: 3px solid #000;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 6px 6px 0 #000;
+        }
+        
+        .close-button {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: #fff;
+            border: 2px solid #000;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 2px 2px 0 #000;
+        }
+        
+        .close-button:hover {
+            background: #000;
+            color: #fff;
+            transform: translate(1px, 1px);
+            box-shadow: 1px 1px 0 #000;
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.75rem 1.5rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            position: relative;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.875rem;
+            line-height: 1.25rem;
+            border: 2px solid #000;
+            box-shadow: 3px 3px 0 #000;
+            background: #fff;
+            color: #000;
+        }
+        
+        .btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: 1px 1px 0 #000;
+        }
+        
+        .btn-sm {
+            padding: 0.5rem 1rem;
+            font-size: 0.75rem;
+            line-height: 1rem;
+        }
+        
+        .btn-primary {
+            background: #000;
+            color: #fff;
+            border-color: #000;
+        }
+        
+        .btn-primary:hover {
+            background: #333;
+        }
+        
+        .btn-outline {
+            background: #fff;
+            color: #000;
+            border-color: #000;
+        }
+        
+        .btn-outline:hover {
+            background: #f0f0f0;
+        }
+        
+        .btn-danger {
+            background: #ff3b30;
+            color: #fff;
+            border-color: #000;
+        }
+        
+        .btn-danger:hover {
+            background: #ff5e56;
+        }
+    </style>
 </head>
-<body class="bg-dark-bg text-white min-h-screen">
+<body class="bg-gray-100">
     <div id="app"></div>
 
     <script>
-        // Configure Tailwind
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'neon-pink': '#ff2e63',
-                        'neon-blue': '#00f2fe',
-                        'neon-green': '#00ff9d',
-                        'neon-purple': '#7928ca',
-                        'dark-bg': '#0f172a',
-                        'darker-bg': '#0a0f1e',
-                        'card-bg': '#1e293b',
-                    },
-                    backgroundImage: {
-                        'gradient-text': 'linear-gradient(90deg, #ff2e63, #7928ca, #00f2fe)',
-                    },
-                }
-            }
-        };
-
-        // Make Preact and its hooks globally available
+        // Configurar Preact globalmente
         window.preact = preact;
         window.preactHooks = preactHooks;
+        
+        // Inicializar la aplicación cuando el DOM esté listo
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Cargando aplicación...');
+            
+            // Cargar el script de la aplicación
+            const script = document.createElement('script');
+            script.src = '/static/js/app.js';
+            script.onload = function() {
+                console.log('Aplicación cargada, inicializando...');
+                if (window.initApp) {
+                    window.initApp();
+                } else {
+                    console.error('Error: No se encontró la función initApp');
+                }
+            };
+            script.onerror = function() {
+                console.error('Error al cargar la aplicación');
+            };
+            document.head.appendChild(script);
+        });
     </script>
-    
-    <!-- App -->
-    <script src="/static/js/app.js"></script>
 </body>
 </html>

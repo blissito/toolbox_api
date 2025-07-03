@@ -2,29 +2,84 @@
 const { h, render } = window.preact || window;
 const { useState, useEffect } = window.preactHooks || window;
 
-// Helper function to create elements
-function createElement(type, props, ...children) {
-  return h(type, props, ...children);
+// Función para mostrar notificaciones
+function showNotification(message, type = 'success') {
+  const toast = document.createElement('div');
+  const bgColor = type === 'error' ? 'bg-red-500' : 'bg-green-500';
+  
+  toast.className = `fixed bottom-4 right-4 ${bgColor} text-white px-6 py-3 font-bold text-sm border-2 border-black shadow-[4px_4px_0_#000] uppercase tracking-wider`;
+  toast.textContent = message;
+  
+  document.body.appendChild(toast);
+  
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    setTimeout(() => toast.remove(), 200);
+  }, 3000);
 }
 
-// Components
-function ApiKeyList({ apiKeys, loadApiKeys }) {
-  // Asegurarse de que apiKeys sea un array
-  const keys = Array.isArray(apiKeys) ? apiKeys : [];
-  
-  if (keys.length === 0) {
-    return h('div', { className: 'text-center py-12' },
-      h('p', { className: 'text-gray-600' }, 'No hay claves API generadas.'),
-      h('p', { className: 'text-gray-500 text-sm mt-1' }, 'Crea una nueva para comenzar.')
-    );
-  }
+// Componente para mostrar el valor de la API Key
+function ApiKeyValue({ value, isVisible, onToggle }) {
+  return h('div', { 
+    className: 'relative group',
+    style: { minHeight: '60px' }
+  },
+    [
+      h('div', { 
+        className: 'font-mono text-sm p-3',
+        style: { 
+          border: '2px solid #000',
+          backgroundColor: '#fff',
+          wordBreak: 'break-all',
+          filter: isVisible ? 'none' : 'blur(4px)',
+          transition: 'filter 0.2s ease',
+          minHeight: '60px',
+          display: 'flex',
+          alignItems: 'center',
+          lineHeight: '1.4'
+        }
+      }, isVisible ? value : '•'.repeat(32)),
+      
+      h('button', {
+        onClick: (e) => {
+          e.stopPropagation();
+          onToggle();
+        },
+        className: 'absolute right-2 top-1/2 transform -translate-y-1/2 bg-white',
+        title: isVisible ? 'Ocultar clave' : 'Mostrar clave',
+        type: 'button',
+        style: {
+          width: '28px',
+          height: '28px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          border: '2px solid #000',
+          boxShadow: '2px 2px 0 #000'
+        }
+      }, 
+        h('i', { 
+          className: `fas ${isVisible ? 'fa-eye-slash' : 'fa-eye'}`,
+          'aria-hidden': 'true',
+          style: { 
+            fontSize: '14px',
+            color: '#000'
+          }
+        })
+      )
+    ]
+  );
+}
 
+// Componente para la lista de claves API
+function ApiKeyList({ apiKeys, loadApiKeys }) {
+  const [visibleKeys, setVisibleKeys] = useState({});
+  
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text).then(() => {
-      // Mostrar un mensaje más sutil
       const toast = document.createElement('div');
-      toast.className = 'fixed bottom-4 right-4 bg-gray-900 text-white px-4 py-2 rounded-md shadow-lg font-medium text-sm';
-      toast.textContent = '¡Clave copiada al portapapeles!';
+      toast.className = 'fixed bottom-4 right-4 bg-black text-white px-6 py-3 font-bold text-sm border-2 border-black shadow-[4px_4px_0_#000] uppercase tracking-wider';
+      toast.textContent = '¡Clave copiada!';
       document.body.appendChild(toast);
       setTimeout(() => {
         toast.style.opacity = '0';
@@ -32,8 +87,41 @@ function ApiKeyList({ apiKeys, loadApiKeys }) {
       }, 2000);
     });
   };
-
-  // Función para formatear fechas de manera más concisa
+  
+  const revokeKey = async (keyId) => {
+    if (!confirm('¿Estás seguro de que deseas revocar esta clave? Esta acción no se puede deshacer.')) {
+      return;
+    }
+    
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/keys/${keyId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        loadApiKeys();
+      } else {
+        const error = await response.json();
+        alert(`Error al revocar la clave: ${error.message || 'Error desconocido'}`);
+      }
+    } catch (error) {
+      console.error('Error al revocar la clave:', error);
+      alert('Error al conectar con el servidor');
+    }
+  };
+  
+  const toggleKeyVisibility = (keyId) => {
+    setVisibleKeys(prev => ({
+      ...prev,
+      [keyId]: !prev[keyId]
+    }));
+  };
+  
   const formatDate = (dateString) => {
     try {
       const date = new Date(dateString);
@@ -365,57 +453,32 @@ function ApiKeyModal({ apiKey, onClose }) {
       }
     `)
   ]));
-}
-
-// Componente principal de la aplicación
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userEmail, setUserEmail] = useState('');
   const [apiKeys, setApiKeys] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [showLoginModal, setShowLoginModal] = useState(false);
-  const [showKeyModal, setShowKeyModal] = useState(false);
-  const [newApiKey, setNewApiKey] = useState('');
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newKeyName, setNewKeyName] = useState('');
+  const [newKeyValue, setNewKeyValue] = useState('');
+  const [showNewKeyModal, setShowNewKeyModal] = useState(false);
+  const [isKeyVisible, setIsKeyVisible] = useState(false);
+  const [error, setError] = useState('');
   
-  // Asegurarse de que los estilos globales estén aplicados
+  // Cargar claves API al montar el componente
   useEffect(() => {
-    const style = document.createElement('style');
-    style.textContent = `
-      .neo-card {
-        border: 2px solid #000;
-        box-shadow: 6px 6px 0 #000;
-        transition: all 0.2s ease;
-      }
-      .neo-card:hover {
-        transform: translate(3px, 3px);
-        box-shadow: 3px 3px 0 #000;
-      }
-      .neo-btn {
-        background: white;
-        border: 2px solid #000;
-        box-shadow: 4px 4px 0 #000;
-        transition: all 0.2s ease;
-      }
-      .neo-btn:hover {
-        transform: translate(2px, 2px);
-        box-shadow: 2px 2px 0 #000;
-      }
-    `;
-    document.head.appendChild(style);
-    
-    return () => {
-      document.head.removeChild(style);
-    };
+    loadApiKeys();
   }, []);
-
-  // Cargar claves API
+  
+  // Función para cargar las claves API
   const loadApiKeys = async () => {
-    if (!isAuthenticated) return;
-    
+    setIsLoading(true);
+    setError('');
     try {
-      console.log('Cargando claves API...');
       const token = localStorage.getItem('token');
       if (!token) {
+        // Si no hay token, redirigir al login
+        window.location.href = '/';
         console.error('No hay token de autenticación');
         return;
       }
@@ -629,86 +692,187 @@ function App() {
       }
       .neo-btn:disabled {
         opacity: 0.6;
-        cursor: not-allowed;
-      }
-    `;
-    document.head.appendChild(style);
-    return () => document.head.removeChild(style);
-  }, []);
 
-  return h('div', { className: 'min-h-screen bg-gray-50' },
-    [
-      // Header
-      h('header', { className: 'bg-white border-b-2 border-black' },
-        h('div', { className: 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center' },
-          [
-            h('h1', { 
-              className: 'text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent'
-            }, 'Toolbox API'),
-            
-            isAuthenticated && h('div', { className: 'flex items-center space-x-6' },
-              [
-                h('a', { 
-                  href: '/docs/webfetch', 
-                  target: '_blank',
-                  className: 'text-sm font-medium text-indigo-600 hover:text-indigo-800 hover:underline',
-                  title: 'Documentación de la API'
-                }, 'Documentación'),
-                h('span', { className: 'text-sm font-medium text-gray-800' }, `Hola, ${userEmail}`),
-                h('button', {
-                  onClick: handleLogout,
-                  className: 'px-4 py-2 bg-red-100 text-red-800 border-2 border-black shadow-[3px_3px_0_#000] hover:bg-red-200 transition-all text-sm font-medium'
-                }, 'Cerrar sesión')
-              ]
-            )
-          ]
-        )
-      ),
-      
-      // Main Content
-      h('main', { className: 'max-w-4xl mx-auto px-4 py-8' },
-        [
-          // API Keys List Section
-          h('div', { className: 'mb-8' },
-            [
-              h('div', { className: 'flex justify-between items-center mb-6' },
-                [
-                  h('h2', { className: 'text-2xl font-bold text-gray-900' }, 'Tus claves API'),
-                  h('button', {
-                    onClick: generateApiKey,
-                    className: 'neo-btn px-4 py-2 font-medium',
-                    disabled: isLoading
-                  }, 'Nueva clave')
-                ]
-              ),
-              h('div', { className: 'space-y-4' },
-                h(ApiKeyList, { apiKeys, loadApiKeys })
-              )
-            ]
-          )
-        ]
-      ),
-      
-      // Login Modal
-      showLoginModal && h(LoginModal, {
-        onClose: () => setShowLoginModal(false),
-        onLogin: () => {
-          setShowLoginModal(false);
-          window.location.reload(); // Recargar para verificar autenticación
-        }
-      }),
-      
-      // API Key Modal
-      showKeyModal && h(ApiKeyModal, {
-        apiKey: newApiKey,
-        onClose: () => setShowKeyModal(false)
-      })
-    ].filter(Boolean)
-  );
+if (response.ok) {
+const data = await response.json();
+console.log('Clave API generada:', data); // Para depuración
+// Asegurarse de que la clave esté en el formato correcto
+const apiKey = data.key || data.api_key;
+if (!apiKey) {
+throw new Error('No se recibió una clave API válida');
+}
+setNewApiKey(apiKey);
+setShowKeyModal(true);
+// Recargar la lista de claves después de un breve retraso
+setTimeout(loadApiKeys, 500);
+} else {
+const errorData = await response.json();
+alert(errorData.message || 'Error al generar la clave API');
+}
+} catch (error) {
+console.error('Error al generar clave API:', error);
+alert('Error al generar la clave API');
+}
+};
+
+// Cerrar sesión
+const handleLogout = () => {
+localStorage.removeItem('token');
+localStorage.removeItem('userEmail');
+setIsAuthenticated(false);
+setUserEmail('');
+setApiKeys([]);
+setShowLoginModal(true); // Mostrar modal de login al cerrar sesión
+};
+
+// Copiar al portapapeles
+const copyToClipboard = (text) => {
+navigator.clipboard.writeText(text).then(() => {
+alert('¡Clave copiada al portapapeles!');
+}).catch(err => {
+console.error('Error al copiar:', err);
+alert('No se pudo copiar la clave');
+});
+};
+
+// Renderizado condicional basado en el estado de carga
+if (isLoading) {
+return h('div', { className: 'min-h-screen flex items-center justify-center' },
+h('div', { className: 'animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-neon-blue' })
+);
+}
+
+// Estilos globales inyectados
+useEffect(() => {
+const style = document.createElement('style');
+style.textContent = `
+.neo-card {
+background: #FFFFFF;
+border: 2px solid #000000;
+border-radius: 0.5rem;
+box-shadow: 4px 4px 0 #000000;
+transition: all 0.2s ease;
+}
+.neo-card:hover {
+transform: translate(-2px, -2px);
+box-shadow: 6px 6px 0 #000000;
+}
+.neo-btn {
+background: #4F46E5;
+color: white;
+border: 2px solid #000000;
+border-radius: 0.375rem;
+box-shadow: 3px 3px 0 #000000;
+transition: all 0.2s ease;
+}
+.neo-btn:hover:not(:disabled) {
+transform: translate(-1px, -1px);
+box-shadow: 4px 4px 0 #000000;
+}
+.neo-btn:active:not(:disabled) {
+transform: translate(1px, 1px);
+box-shadow: 2px 2px 0 #000000;
+}
+.neo-btn:disabled {
+opacity: 0.6;
+cursor: not-allowed;
+}
+`;
+document.head.appendChild(style);
+return () => document.head.removeChild(style);
+}, []);
+
+return h('div', { className: 'min-h-screen bg-gray-50' },
+[
+// Header
+h('header', { className: 'bg-white shadow-sm' },
+h('div', { className: 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4' },
+h('div', { className: 'flex justify-between items-center' },
+[
+h('h1', { className: 'text-2xl font-bold text-gray-900' }, 'Toolbox API'),
+isAuthenticated ? h('div', { className: 'flex items-center space-x-4' },
+[
+h('a', {
+href: '/docs',
+target: '_blank',
+className: 'text-sm font-medium text-indigo-600 hover:text-indigo-800 hover:underline',
+title: 'Documentación de la API'
+}, 'Documentación'),
+h('span', { className: 'text-sm font-medium text-gray-800' }, `Hola, ${userEmail}`),
+h('button', {
+onClick: handleLogout,
+className: 'px-4 py-2 bg-red-100 text-red-800 border-2 border-black shadow-[3px_3px_0_#000] hover:bg-red-200 transition-all text-sm font-medium'
+}, 'Cerrar sesión')
+]
+) : h('button', {
+onClick: () => setShowLoginModal(true),
+className: 'px-4 py-2 bg-indigo-600 text-white border-2 border-black shadow-[3px_3px_0_#000] hover:bg-indigo-700 transition-all text-sm font-medium'
+}, 'Iniciar sesión')
+]
+)
+)
+),
+
+// Main Content
+h('main', { className: 'max-w-4xl mx-auto px-4 py-8' },
+[
+// API Keys List Section
+h('div', { className: 'mb-8' },
+[
+h('div', { className: 'flex justify-between items-center mb-6' },
+[
+h('h2', { className: 'text-2xl font-bold text-gray-900' }, 'Tus claves API'),
+h('button', {
+onClick: generateApiKey,
+className: 'neo-btn px-4 py-2 font-medium',
+disabled: isLoading
+}, 'Nueva clave')
+]
+),
+h('div', { className: 'space-y-4' },
+h(ApiKeyList, { apiKeys, loadApiKeys })
+)
+]
+)
+]
+)
+].concat([
+// Login Modal
+showLoginModal && h('div', { className: 'modal-overlay' },
+h('div', { className: 'modal-content' },
+h('h2', null, 'Iniciar sesión'),
+h('p', null, 'Por favor inicia sesión para continuar'),
+h('button', {
+onClick: () => setShowLoginModal(false),
+className: 'btn btn-primary mt-4'
+}, 'Cerrar')
+)
+),
+
+// API Key Modal
+showKeyModal && h('div', { className: 'modal-overlay' },
+h('div', { className: 'modal-content' },
+h('h2', null, 'Tu nueva clave API'),
+h('p', { className: 'mb-4' }, 'Guarda esta clave en un lugar seguro. No podrás verla de nuevo.'),
+h('div', { className: 'mb-4' },
+h(ApiKeyValue, {
+value: newApiKey,
+isVisible: true,
+onToggle: () => {}
+})
+),
+h('button', {
+onClick: () => setShowKeyModal(false),
+className: 'btn btn-primary w-full'
+}, 'Entendido')
+)
+)
+].filter(Boolean))
+);
 }
 
 // Renderizar la aplicación
 const appContainer = document.getElementById('app');
 if (appContainer) {
-  render(h(App), appContainer);
+render(h(App), appContainer);
 }

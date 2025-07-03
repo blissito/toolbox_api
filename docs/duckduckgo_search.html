@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DuckDuckGo Search - Documentación</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --neon-pink: #ff2e63;
+            --neon-blue: #00f2fe;
+            --black: #0a0a0a;
+            --white: #f8f9fa;
+        }
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background-color: var(--white);
+            color: var(--black);
+            border: 12px solid var(--black);
+            min-height: 100vh;
+        }
+        .neo-btn {
+            background: var(--white);
+            border: 3px solid var(--black);
+            box-shadow: 6px 6px 0 var(--black);
+            transition: all 0.2s ease;
+        }
+        .neo-btn:hover {
+            transform: translate(3px, 3px);
+            box-shadow: 3px 3px 0 var(--black);
+        }
+        .gradient-text {
+            background: linear-gradient(45deg, var(--neon-pink), var(--neon-blue));
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: inline-block;
+        }
+        pre {
+            background-color: #f4f4f4;
+            border: 2px solid var(--black);
+            padding: 1rem;
+            overflow-x: auto;
+            margin: 1rem 0;
+            font-family: 'Courier New', monospace;
+        }
+        .code-block {
+            background-color: #f4f4f4;
+            border: 2px solid var(--black);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+        .copy-btn {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: var(--black);
+            color: white;
+            border: none;
+            padding: 0.25rem 0.5rem;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <!-- Navbar -->
+    <nav class="mb-12">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between items-center h-20">
+                <div class="flex items-center">
+                    <a href="/" class="text-2xl font-bold bg-black text-white px-4 py-2">TOOLBOX API</a>
+                </div>
+                <a href="/" class="neo-btn px-6 py-3 font-bold text-lg">
+                    ← Volver al inicio
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-5xl mx-auto px-4">
+        <h1 class="text-4xl md:text-5xl font-bold mb-6">
+            <span class="gradient-text">DuckDuckGo Search</span> - Documentación
+        </h1>
+        
+        <p class="text-xl mb-4">
+            Realiza búsquedas en la web utilizando el motor de búsqueda DuckDuckGo de forma anónima y sin restricciones.
+        </p>
+        
+        <div class="bg-gray-100 p-4 rounded-lg border border-black mb-8">
+            <p class="font-semibold mb-2">Otras herramientas disponibles:</p>
+            <div class="flex flex-wrap gap-4">
+                <a href="/docs/webfetch" class="neo-btn px-4 py-2 bg-white text-black font-medium">
+                    WebFetch
+                </a>
+                <a href="/docs/duckduckgo_search" class="neo-btn px-4 py-2 bg-black text-white font-medium">
+                    DuckDuckGo Search
+                </a>
+            </div>
+        </div>
+
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold mb-4">Uso Básico</h2>
+            <p class="mb-4">
+                Realiza una búsqueda en DuckDuckGo y obtén los resultados en formato JSON.
+            </p>
+            
+            <h3 class="text-xl font-semibold mt-6 mb-2">Endpoint</h3>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyToClipboard('endpoint')">Copiar</button>
+                <pre id="endpoint">POST /api/tool</pre>
+            </div>
+
+            <h3 class="text-xl font-semibold mt-6 mb-2">Parámetros</h3>
+            <div class="overflow-x-auto">
+                <table class="min-w-full border border-black">
+                    <thead class="bg-black text-white">
+                        <tr>
+                            <th class="px-4 py-2">Parámetro</th>
+                            <th class="px-4 py-2">Tipo</th>
+                            <th class="px-4 py-2">Requerido</th>
+                            <th class="px-4 py-2">Descripción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="border-t border-black">
+                            <td class="px-4 py-2 font-mono">query</td>
+                            <td class="px-4 py-2">string</td>
+                            <td class="px-4 py-2">Sí</td>
+                            <td class="px-4 py-2">Término de búsqueda</td>
+                        </tr>
+                        <tr class="bg-gray-100 border-t border-black">
+                            <td class="px-4 py-2 font-mono">max_results</td>
+                            <td class="px-4 py-2">number</td>
+                            <td class="px-4 py-2">No</td>
+                            <td class="px-4 py-2">Número máximo de resultados a devolver (por defecto: 10)</td>
+                        </tr>
+                        <tr class="border-t border-black">
+                            <td class="px-4 py-2 font-mono">region</td>
+                            <td class="px-4 py-2">string</td>
+                            <td class="px-4 py-2">No</td>
+                            <td class="px-4 py-2">Región para los resultados (ej: 'wt-wt' para internacional, 'es-es' para España)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3 class="text-xl font-semibold mt-6 mb-2">Ejemplo de solicitud</h3>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyToClipboard('example-request')">Copiar</button>
+                <pre id="example-request">curl -X POST \
+  https://toolbox-api.fly.dev/api/tool \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "tool": "duckduckgo_search",
+    "query": "inteligencia artificial",
+    "max_results": 5,
+    "region": "es-es"
+  }'</pre>
+            </div>
+
+            <h3 class="text-xl font-semibold mt-6 mb-2">Ejemplo de respuesta</h3>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyToClipboard('example-response')">Copiar</button>
+                <pre id="example-response">{
+  "results": [
+    {
+      "title": "Inteligencia Artificial - Wikipedia",
+      "link": "https://es.wikipedia.org/wiki/Inteligencia_artificial",
+      "snippet": "La inteligencia artificial (IA) es la inteligencia llevada a cabo por máquinas...",
+      "source": "es.wikipedia.org"
+    },
+    {
+      "title": "¿Qué es la Inteligencia Artificial? - IBM",
+      "link": "https://www.ibm.com/artificial-intelligence",
+      "snippet": "La inteligencia artificial aprovecha computadoras y máquinas para imitar las capacidades de resolución de problemas...",
+      "source": "www.ibm.com"
+    }
+  ],
+  "query": "inteligencia artificial",
+  "region": "es-es",
+  "timestamp": "2025-07-03T19:46:18Z"
+}</pre>
+            </div>
+        </section>
+
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold mb-4">Códigos de Estado</h2>
+            <div class="overflow-x-auto">
+                <table class="min-w-full border border-black">
+                    <thead class="bg-black text-white">
+                        <tr>
+                            <th class="px-4 py-2">Código</th>
+                            <th class="px-4 py-2">Descripción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="border-t border-black">
+                            <td class="px-4 py-2 font-mono">200</td>
+                            <td class="px-4 py-2">OK - Búsqueda completada con éxito</td>
+                        </tr>
+                        <tr class="bg-gray-100 border-t border-black">
+                            <td class="px-4 py-2 font-mono">400</td>
+                            <td class="px-4 py-2">Solicitud incorrecta (faltan parámetros obligatorios)</td>
+                        </tr>
+                        <tr class="border-t border-black">
+                            <td class="px-4 py-2 font-mono">429</td>
+                            <td class="px-4 py-2">Demasiadas solicitudes (límite de tasa excedido)</td>
+                        </tr>
+                        <tr class="bg-gray-100 border-t border-black">
+                            <td class="px-4 py-2 font-mono">500</td>
+                            <td class="px-4 py-2">Error interno del servidor</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <footer class="mt-16 py-8 border-t-2 border-black">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <p>© 2025 Toolbox API. Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+    <script>
+        function copyToClipboard(elementId) {
+            const element = document.getElementById(elementId);
+            const text = element.innerText;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                const button = element.parentElement.querySelector('button');
+                const originalText = button.innerText;
+                
+                button.innerText = '¡Copiado!';
+                button.style.backgroundColor = '#10B981';
+                
+                setTimeout(() => {
+                    button.innerText = originalText;
+                    button.style.backgroundColor = '';
+                }, 2000);
+            }).catch(err => {
+                console.error('Error al copiar: ', err);
+            });
+        }
+    </script>
+</body>
+</html>
