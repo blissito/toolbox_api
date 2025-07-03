@@ -320,29 +320,39 @@ func getAuthenticatedEmail(r *http.Request) (string, error) {
 			apiKey := token
 
 			// Si la clave API tiene el formato ID.tbx_HASH, extraer el ID y el hash
-			var keyID, keyHash string
+			var keyID, keySuffix string
 			if strings.Contains(apiKey, ".tbx_") {
-				keyParts := strings.Split(apiKey, ".tbx_")
+				keyParts := strings.SplitN(apiKey, ".", 2)
 				if len(keyParts) == 2 {
 					keyID = keyParts[0]
-					keyHash = "tbx_" + keyParts[1]
+					keySuffix = keyParts[1] // tbx_...
 				}
 			} else {
 				// Si no tiene el formato esperado, asumir que es solo el ID
 				keyID = apiKey
 			}
+			
+			// Si tenemos el sufijo (tbx_...), buscar por hash también
+			// De lo contrario, buscar solo por ID
 
 			// Buscar el usuario por API key
 			var email string
-			err = db.QueryRow(
-				`SELECT u.email 
-				 FROM api_keys ak 
-				 JOIN users u ON ak.user_id = u.id 
-				 WHERE (ak.hash = ? OR ak.id = ?) 
-				 AND ak.revoked = 0`,
-				keyHash,
-				keyID,
-			).Scan(&email)
+			query := `SELECT u.email, ak.hash 
+			 FROM api_keys ak 
+			 JOIN users u ON ak.user_id = u.id 
+			 WHERE ak.id = ? 
+			 AND ak.revoked = 0`
+
+			var storedHash string
+			err = db.QueryRow(query, keyID).Scan(&email, &storedHash)
+
+			// Si encontramos un registro, verificar el hash si es necesario
+			if err == nil && keySuffix != "" {
+				// El hash almacenado debería terminar con el sufijo que nos dieron
+				if !strings.HasSuffix(storedHash, strings.TrimPrefix(keySuffix, "tbx_")) {
+					return "", fmt.Errorf("API key inválida: hash no coincide")
+				}
+			}
 
 			if err != nil {
 				if err == sql.ErrNoRows {
