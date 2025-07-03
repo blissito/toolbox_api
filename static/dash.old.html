@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Toolbox API</title>
+    <!-- Preact -->
+    <script src="https://unpkg.com/preact@10.11.0/dist/preact.umd.js"></script>
+    <script src="https://unpkg.com/preact@10.11.0/hooks/dist/hooks.umd.js"></script>
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com/3.4.1"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧰</text></svg>">
+    <!-- Security Headers -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src 'self' 'unsafe-inline' https:; style-src 'self' 'unsafe-inline' https:; font-src 'self' https: data:; img-src 'self' https: data:; connect-src 'self' http: https:;">
+    <style>
+        :root {
+            --neon-pink: #ff2e63;
+            --neon-blue: #00f2fe;
+            --neon-green: #00ff9d;
+            --neon-purple: #7928ca;
+            --dark-bg: #0f172a;
+            --darker-bg: #0a0f1e;
+            --card-bg: #1e293b;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+        }
+
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background-color: var(--dark-bg);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+        }
+
+        .gradient-text {
+            background: linear-gradient(90deg, var(--neon-pink), var(--neon-purple), var(--neon-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            display: inline;
+        }
+
+        .neo-btn {
+            background: linear-gradient(145deg, #1e293b, #1a2233);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 5px 5px 15px #0d1322, -5px -5px 15px #2f3f5e;
+            color: var(--neon-blue);
+            transition: all 0.3s ease;
+        }
+
+        .neo-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 8px 8px 20px #0d1322, -8px -8px 20px #2f3f5e;
+            color: var(--neon-green);
+        }
+
+        .neo-btn:active {
+            transform: translateY(0);
+            box-shadow: 3px 3px 10px #0d1322, -3px -3px 10px #2f3f5e;
+        }
+
+        .api-key {
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-family: monospace;
+            font-size: 0.9rem;
+            color: var(--neon-green);
+        }
+
+        .copy-btn {
+            background: var(--neon-purple);
+            color: white;
+            border: none;
+            padding: 0.3rem 0.8rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+        }
+
+        .copy-btn:hover {
+            background: var(--neon-pink);
+            transform: translateY(-1px);
+        }
+
+        .copy-btn:active {
+            transform: translateY(0);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div id="app"></div>
+    
+    <script>
+        const { h, render, useState, useEffect } = window.preactHooks;
+        
+        // Componente para mostrar el modal de login
+        function LoginModal({ onClose, onLogin }) {
+            const [email, setEmail] = useState('');
+            const [loading, setLoading] = useState(false);
+            const [error, setError] = useState(null);
+            
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                setLoading(true);
+                setError(null);
+                
+        
+        // Renderizar la lista de claves API
+        function renderApiKeys(keys) {
+            const container = document.getElementById('apiKeysList');
+            if (!container) return;
+            
+            if (keys.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-gray-500">
+                        No hay claves API generadas. Inicia sesión y haz clic en "Generar Nueva Clave" para comenzar.
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = keys.map(key => `
+                <div class="bg-white rounded-lg shadow p-4">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h3 class="font-medium">${key.name || 'Clave sin nombre'}</h3>
+                            <p class="text-sm text-gray-500">Creada el ${new Date(key.createdAt).toLocaleDateString()}</p>
+                        </div>
+                        <button onclick="copyToClipboard('${key.key}')" class="text-sm text-blue-600 hover:text-blue-800">
+                            Copiar
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        } // Función para manejar el cierre de sesión
+        function handleLogout() {
+            localStorage.removeItem('token');
+            window.location.reload();
+        }
+
+        // Verificar autenticación al cargar la página
+        // Verificar si hay un token en la URL (después del login con magic link)
+        async function checkUrlForToken() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('token');
+            
+            if (token) {
+                try {
+                    // Validar el token con el servidor
+                    const response = await fetch('/api/auth/validate', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ token })
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        // Guardar el token JWT
+                        localStorage.setItem('token', data.token);
+                        
+                        // Limpiar la URL
+                        const redirectUrl = localStorage.getItem('redirectAfterLogin') || '/';
+                        localStorage.removeItem('redirectAfterLogin');
+                        
+                        window.history.replaceState({}, document.title, redirectUrl);
+                        window.location.href = redirectUrl;
+                    } else {
+                        throw new Error('El enlace de inicio de sesión no es válido o ha expirado');
+                    }
+                } catch (error) {
+                    console.error('Error al validar el token:', error);
+                    // Limpiar la URL
+                    const cleanUrl = window.location.origin + window.location.pathname;
+                    window.history.replaceState({}, document.title, cleanUrl);
+                    
+                    // Mostrar mensaje de error
+                    alert(error.message || 'Error al iniciar sesión. Por favor, solicita un nuevo enlace.');
+                }
+            }
+        }
+
+        // Función para manejar el evento de teclado
+        function handleKeyDown(e) {
+            // Cerrar con tecla ESC (código 27)
+            if (e.key === 'Escape' || e.keyCode === 27) {
+                const loginModal = document.getElementById('loginModal');
+                const apiKeyModal = document.getElementById('apiKeyModal');
+                
+                if (loginModal && !loginModal.classList.contains('hidden')) {
+                    hideLoginModal();
+                    e.preventDefault();
+                    e.stopPropagation();
+                } else if (apiKeyModal && !apiKeyModal.classList.contains('hidden')) {
+                    closeAPIKeyModal();
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+            }
+        }
+
+        // Inicializar la aplicación
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Verificar autenticación al cargar
+            await checkAuth();
+            
+            // Configurar el botón de login
+            const loginBtn = document.getElementById('loginBtn');
+            if (loginBtn) {
+                loginBtn.addEventListener('click', function() {
+                    // Guardar la URL actual para redirigir después del login
+                    localStorage.setItem('redirectAfterLogin', window.location.pathname);
+                    window.location.href = '/login.html';
+                });
+            }
+            
+            // Configurar el botón de generar clave
+            const generateBtn = document.getElementById('generateKeyBtn');
+            if (generateBtn) {
+                generateBtn.addEventListener('click', async function() {
+                    const isAuthenticated = await checkAuth();
+                    if (!isAuthenticated) {
+                        // Guardar la URL actual para redirigir después del login
+                        localStorage.setItem('redirectAfterLogin', window.location.pathname);
+                        window.location.href = '/login.html';
+                        return;
+                    }
+                    await generateAPIKey();
+                });
+            }
+            
+            // Configurar el botón de cerrar sesión
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', handleLogout);
+            }
+            
+            // Los clics en los modales ahora se manejan directamente en los elementos HTML
+            // usando los manejadores onclick para mejorar el rendimiento
+        });
+
+        // Verificar si el usuario está autenticado
+        async function checkAuth() {
+            const token = localStorage.getItem('token');
+            
+            // Si no hay token, mostrar interfaz para usuarios no autenticados
+            if (!token) {
+                updateUIAuthState(false);
+                return false;
+            }
+            
+            try {
+                // Verificar la sesión con el servidor
+                const response = await fetch('/api/auth/me', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const userData = await response.json();
+                    if (userData.email) {
+                        // Usuario autenticado correctamente
+                        localStorage.setItem('userEmail', userData.email);
+                        updateUIAuthState(true, userData.email);
+                        return true;
+                    }
+                }
+                
+                // Si llegamos aquí, el token no es válido
+                console.warn('Token inválido o expirado');
+                localStorage.removeItem('userEmail');
+                localStorage.removeItem('token');
+                updateUIAuthState(false);
+                return false;
+                
+            } catch (error) {
+                console.error('Error al verificar la autenticación:', error);
+                localStorage.removeItem('token');
+                updateUIAuthState(false);
+                return false;
+            }
+        }
+        
+        // Actualizar la interfaz de usuario según el estado de autenticación
+        function updateUIAuthState(isAuthenticated, email = '') {
+            const protectedContent = document.getElementById('protectedContent');
+            const userEmailElement = document.getElementById('userEmail');
+            
+            if (isAuthenticated) {
+                // Usuario autenticado
+                if (userEmailElement) {
+                    userEmailElement.textContent = email;
+                    userEmailElement.closest('.user-section')?.classList.remove('hidden');
+                }
+                
+                // Mostrar elementos para usuarios autenticados
+                document.querySelectorAll('.auth-only').forEach(el => el.classList.remove('hidden'));
+                document.querySelectorAll('.no-auth').forEach(el => el.classList.add('hidden'));
+                
+                // Mostrar contenido protegido si existe
+                if (protectedContent) protectedContent.classList.remove('hidden');
+                
+                // Mostrar botón de cerrar sesión
+                const logoutBtn = document.getElementById('logoutBtn');
+                if (logoutBtn) logoutBtn.classList.remove('hidden');
+                
+                // Ocultar botón de iniciar sesión
+                const loginBtn = document.getElementById('loginBtn');
+                if (loginBtn) loginBtn.classList.add('hidden');
+                
+            } else {
+                // Usuario no autenticado
+                if (userEmailElement) {
+                    userEmailElement.closest('.user-section')?.classList.add('hidden');
+                }
+                
+                // Mostrar elementos para usuarios no autenticados
+                document.querySelectorAll('.auth-only').forEach(el => el.classList.add('hidden'));
+                document.querySelectorAll('.no-auth').forEach(el => el.classList.remove('hidden'));
+                
+                // Ocultar botón de cerrar sesión
+                const logoutBtn = document.getElementById('logoutBtn');
+                if (logoutBtn) logoutBtn.classList.add('hidden');
+                
+                // Mostrar botón de iniciar sesión
+                const loginBtn = document.getElementById('loginBtn');
+                if (loginBtn) loginBtn.classList.remove('hidden');
+            }
+        }
+
+        // Manejar envío del formulario de login
+        async function handleLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('email')?.value.trim();
+            const submitBtn = e.target?.querySelector('button[type="submit"]');
+            
+            if (!email) {
+                alert('Por favor, introduce tu dirección de correo electrónico');
+                return;
+            }
+            
+            // Validar formato de email
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                alert('Por favor, introduce una dirección de correo electrónico válida');
+                return;
+            }
+            
+            // Mostrar indicador de carga
+            const originalBtnText = submitBtn?.innerHTML;
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="animate-spin">⏳</span> Enviando...';
+            }
+            
+            try {
+                const response = await fetch('/api/auth/request-magic-link', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email }),
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    // Mostrar mensaje de éxito
+                    const loginForm = document.getElementById('loginModal')?.querySelector('form');
+                    if (loginForm) {
+                        loginForm.innerHTML = `
+                            <div class="text-center py-4">
+                                <div class="text-green-600 mb-4">
+                                    <svg class="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                    <p class="font-medium">¡Enlace enviado!</p>
+                                </div>
+                                <p class="text-gray-600 mb-4">Hemos enviado un enlace de inicio de sesión a <span class="font-medium">${email}</span>. Revisa tu bandeja de entrada.</p>
+                                <button onclick="generateAPIKey()" data-modal-trigger="api-key" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                    Generar tu primera clave
+                </button>
+                            </div>
+                        `;
+                    } else {
+                        alert('Se ha enviado un enlace de inicio de sesión a tu correo electrónico');
+                        document.getElementById('loginModal').classList.add('hidden');
+                    }
+                } else {
+                    const error = await response.json().catch(() => ({}));
+                    alert(error.message || 'Error al solicitar el enlace de inicio de sesión');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al conectar con el servidor. Por favor, verifica tu conexión a internet.');
+            } finally {
+                // Restaurar el botón
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnText;
+                }
+            }
+        }
+
+        // Generar una nueva clave API
+        async function generateAPIKey() {
+            // Mostrar indicador de carga
+            const loadingIndicator = document.createElement('div');
+            loadingIndicator.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            loadingIndicator.innerHTML = `
+                <div class="bg-white p-6 rounded-lg shadow-xl max-w-md w-full mx-4">
+                    <div class="flex items-center justify-center space-x-3">
+                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                        <span class="text-lg font-medium">Generando tu clave API...</span>
+                    </div>
+                    <p class="mt-3 text-gray-600 text-center">Esto puede tomar un momento</p>
+                </div>
+            `;
+            document.body.appendChild(loadingIndicator);
+            
+            try {
+                // Obtener el token de autenticación
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    throw new Error('No se encontró el token de autenticación');
+                }
+
+                const response = await fetch('/api/keys/create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        name: `Clave ${new Date().toLocaleDateString()}`
+                    })
+                });
+
+                // Manejar errores de autenticación
+                if (response.status === 401) {
+                    localStorage.removeItem('token');
+                    window.location.href = '/login.html';
+                    return;
+                }
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.message || 'Error al generar la clave API');
+                }
+
+                const data = await response.json();
+                
+                // Crear o actualizar el modal de nueva clave
+                let modal = document.getElementById('apiKeyModal');
+                if (!modal) {
+                    modal = document.createElement('div');
+                    modal.id = 'apiKeyModal';
+                    modal.className = 'fixed inset-0 z-50 hidden';
+                    modal.innerHTML = `
+                        <div class="fixed inset-0 bg-black bg-opacity-50" onclick="closeAPIKeyModal()"></div>
+                        <div class="fixed inset-0 flex items-center justify-center p-4">
+                            <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6 relative" onclick="event.stopPropagation()">
+                                <h3 class="text-xl font-bold mb-4">¡Nueva Clave API Generada!</h3>
+                                <p class="mb-4 text-gray-700">Guarda esta clave en un lugar seguro. <span class="font-semibold text-red-600">No podrás verla de nuevo</span>.</p>
+                                
+                                <div class="bg-gray-100 p-4 rounded-md relative">
+                                    <code id="newApiKey" class="font-mono break-all"></code>
+                                    <button 
+                                        onclick="copyToClipboard('newApiKey'); this.textContent = '¡Copiada!'; setTimeout(() => this.textContent = 'Copiar', 2000)" 
+                                        class="absolute top-2 right-2 text-sm bg-white hover:bg-gray-50 px-2 py-1 rounded border border-gray-300"
+                                    >
+                                        Copiar
+                                    </button>
+                                </div>
+                                
+                                <div class="mt-6 flex justify-end">
+                                    <button 
+                                        onclick="closeAPIKeyModal()" 
+                                        class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                                    >
+                                        Cerrar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    document.body.appendChild(modal);
+                }
+                
+                // Mostrar la nueva clave en el modal
+                const newApiKeyElement = document.getElementById('newApiKey');
+                if (newApiKeyElement) {
+                    newApiKeyElement.textContent = data.key;
+                }
+                
+                // Mostrar el modal
+                modal.classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+                
+                // Recargar la lista de claves
+                await loadApiKeys();
+                
+            } catch (error) {
+                console.error('Error al generar la clave API:', error);
+                
+                // Mostrar mensaje de error en un toast o alerta
+                const toast = document.createElement('div');
+                toast.className = 'fixed bottom-4 right-4 bg-red-500 text-white px-6 py-3 rounded-md shadow-lg flex items-center';
+                toast.innerHTML = `
+                    <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span>${error.message || 'Error al generar la clave API'}</span>
+                `;
+                document.body.appendChild(toast);
+                
+                // Eliminar el toast después de 5 segundos
+                setTimeout(() => {
+                    toast.classList.add('opacity-0', 'transition-opacity', 'duration-300');
+                    setTimeout(() => toast.remove(), 300);
+                }, 5000);
+                
+            } finally {
+                // Eliminar el indicador de carga
+                if (loadingIndicator.parentNode) {
+                    loadingIndicator.parentNode.removeChild(loadingIndicator);
+                    
+                    // Restaurar scroll solo si no hay otro modal abierto
+                    if (!document.querySelector('.fixed.inset-0:not(.hidden)')) {
+                        document.body.style.overflow = 'auto';
+                    }
+                }
+            }
+        }
+
+        // Cerrar el modal de login
+        function closeModal() {
+            hideLoginModal();
+        }
+
+        // Copiar al portapapeles
+        function copyToClipboard(textOrElementId) {
+            let textToCopy = textOrElementId;
+            const element = document.getElementById(textOrElementId);
+            
+            if (element) {
+                // Si es un ID de elemento, obtener su texto
+                textToCopy = element.textContent;
+            }
+            
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                // Mostrar mensaje de éxito en el botón correspondiente
+                if (element) {
+                    const button = element.nextElementSibling;
+                    if (button && button.classList.contains('copy-btn')) {
+                        const originalText = button.textContent;
+                        button.textContent = '¡Copiado!';
+                        button.disabled = true;
+                        setTimeout(() => {
+                            button.textContent = originalText;
+                            button.disabled = false;
+                        }, 2000);
+                    }
+                } else {
+                    // Si no hay elemento, mostrar un mensaje genérico
+                    alert('¡Clave copiada al portapapeles!');
+                }
+            }).catch(err => {
+                console.error('Error al copiar al portapapeles:', err);
+                alert('No se pudo copiar la clave. Por favor, inténtalo de nuevo.');
+            });
+        }
+
+        // Cerrar el modal de la clave API
+        function closeAPIKeyModal() {
+            const modal = document.getElementById('apiKeyModal');
+            if (modal) {
+                modal.classList.add('hidden');
+                // Restaurar el scroll del body
+                document.body.style.overflow = 'auto';
+                
+                // Enfocar el botón que abrió el modal si existe
+                const lastFocused = document.activeElement;
+                if (lastFocused && lastFocused.getAttribute('data-modal-trigger') === 'api-key') {
+                    lastFocused.focus();
+                } else {
+                    // Si no hay un botón específico, enfocar el botón de generar clave
+                    const generateBtn = document.getElementById('generateKeyBtn');
+                    if (generateBtn) {
+                        generateBtn.focus();
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>

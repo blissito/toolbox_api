@@ -4,7 +4,7 @@ build:
 	podman build -t toolbox-api .
 
 run: stop build
-	podman run -d -p 8000:8000 --name toolbox-api toolbox-api
+	podman run -d --env-file=.env -p 8000:8000 --name toolbox-api toolbox-api
 	@echo "\nAPI running at http://localhost:8000"
 
 # Find and kill process using port 8000

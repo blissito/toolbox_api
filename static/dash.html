@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Toolbox API - Dashboard</title>
+    <!-- Preact -->
+    <script src="https://unpkg.com/preact@10.11.0/dist/preact.umd.js"></script>
+    <script src="https://unpkg.com/preact@10.11.0/hooks/dist/hooks.umd.js"></script>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-dark-bg text-white min-h-screen">
+    <div id="app"></div>
+
+    <script>
+        // Configure Tailwind
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'neon-pink': '#ff2e63',
+                        'neon-blue': '#00f2fe',
+                        'neon-green': '#00ff9d',
+                        'neon-purple': '#7928ca',
+                        'dark-bg': '#0f172a',
+                        'darker-bg': '#0a0f1e',
+                        'card-bg': '#1e293b',
+                    },
+                    backgroundImage: {
+                        'gradient-text': 'linear-gradient(90deg, #ff2e63, #7928ca, #00f2fe)',
+                    },
+                }
+            }
+        };
+
+        // Make Preact and its hooks globally available
+        window.preact = preact;
+        window.preactHooks = preactHooks;
+    </script>
+    
+    <!-- App -->
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

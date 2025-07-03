@@ -1,38 +1,78 @@
 # Etapa de construcción
-FROM golang:1.24-alpine AS builder
+FROM golang:1.23-bullseye AS builder
 
-# Establecer directorio de trabajo
 WORKDIR /app
 
-# Copiar solo los archivos necesarios para las dependencias
-COPY go.mod .
+# Instalar dependencias básicas
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    tzdata \
+    && update-ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Configurar Go para compilación estática sin CGO
+ENV CGO_ENABLED=0 \
+    GOOS=linux \
+    GOARCH=amd64 \
+    GO111MODULE=on \
+    GOPROXY=https://proxy.golang.org,direct
+
+# Copiar archivos de dependencias primero para caché
+COPY go.mod go.sum ./
 
 # Descargar dependencias
-RUN go mod download
+RUN go mod download \
+    && go mod verify
 
-# Copiar el resto de los archivos
+# Copiar el código fuente
 COPY . .
 
 # Construir la aplicación
-RUN CGO_ENABLED=0 GOOS=linux go build -o toolbox-api .
+RUN go build -v -ldflags='-w -s' -o /app/toolbox-api .
 
 # Etapa final
-FROM alpine:3.18
+FROM debian:bullseye-slim
+
 WORKDIR /app
 
-# Instalar dependencias necesarias
-RUN apk --no-cache add ca-certificates
+# Instalar solo lo esencial para ejecución
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    tzdata \
+    && update-ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copiar el binario
-COPY --from=builder /app/toolbox-api .
+# Crear usuario y grupo no root
+RUN groupadd -r appgroup && useradd -r -g appgroup appuser
 
-# Copiar archivos estáticos
-COPY --from=builder /app/index.html .
-COPY --from=builder /app/dashboard.html .
-COPY --from=builder /app/docs ./docs/
+# Crear directorios necesarios con los permisos correctos
+RUN mkdir -p /app/static/css /app/static/js /app/static/images /app/static/assets \
+    /app/data \
+    /app/docs \
+    && chown -R appuser:appgroup /app \
+    && chmod -R 755 /app
+
+# Copiar archivos desde el builder
+COPY --from=builder --chown=appuser:appgroup /app/toolbox-api /app/
+COPY --from=builder --chown=appuser:appgroup /app/static/ /app/static/
+COPY --from=builder --chown=appuser:appgroup /app/home.html /app/
+COPY --from=builder --chown=appuser:appgroup /app/docs/ /app/docs/
+
+# Asegurar que los directorios tengan los permisos correctos
+RUN chmod -R 755 /app/static && \
+    chmod 755 /app/home.html && \
+    chmod -R 755 /app/docs && \
+    chmod +x /app/toolbox-api
+
+# Usar el usuario no root
+USER appuser
 
 # Puerto expuesto
 EXPOSE 8000
 
-# Comando para ejecutar la aplicación
-CMD ["./toolbox-api"]
+# Variables de entorno
+ENV TZ=UTC \
+    PORT=8000
+
+# Comando por defecto
+CMD ["/app/toolbox-api"]
