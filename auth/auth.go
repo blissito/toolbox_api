@@ -2,13 +2,10 @@ package auth
 
 import (
 	"crypto/rand"
-	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"time"
 
@@ -30,7 +27,7 @@ type APIKey struct {
 	ID         string    `json:"id"`
 	UserID     int       `json:"user_id"`
 	Name       string    `json:"name"`
-	Hash       string    `json:"-"` // No se expone en JSON
+	Key        string    `json:"key,omitempty"` // Solo se muestra una vez al crear/regenerar
 	CreatedAt  time.Time `json:"created_at"`
 	LastUsedAt time.Time `json:"last_used_at,omitempty"`
 	Revoked    bool      `json:"revoked"`
@@ -39,6 +36,13 @@ type APIKey struct {
 // Configuración de autenticación
 type Config struct {
 	JWTSecret string
+}
+
+func getEnv(key, defaultValue string) string {
+	if value, exists := os.LookupEnv(key); exists {
+		return value
+	}
+	return defaultValue
 }
 
 var config = Config{
@@ -57,8 +61,21 @@ func InitDB(db *sql.DB) error {
 	return createTables()
 }
 
-// Crea las tablas necesarias
+// Crea las tablas necesarias (solo si no existen migraciones)
 func createTables() error {
+	// Verificar si ya existen las tablas (para compatibilidad con versiones antiguas)
+	var tableCount int
+	err := DB.QueryRow("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='api_keys'").Scan(&tableCount)
+	if err != nil {
+		return fmt.Errorf("error al verificar tablas existentes: %v", err)
+	}
+
+	// Si ya existe la tabla api_keys, asumimos que las migraciones ya se aplicaron
+	if tableCount > 0 {
+		return nil
+	}
+
+	// Si no existe la tabla, aplicar esquema básico (solo para compatibilidad con versiones muy antiguas)
 	tables := []string{
 		`CREATE TABLE IF NOT EXISTS users (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -77,7 +94,7 @@ func createTables() error {
 			id TEXT PRIMARY KEY,
 			user_id INTEGER NOT NULL,
 			name TEXT NOT NULL,
-			hash TEXT NOT NULL,
+			key TEXT NOT NULL UNIQUE,
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 			last_used_at TIMESTAMP,
 			revoked BOOLEAN DEFAULT FALSE,
@@ -279,21 +296,16 @@ func CreateAPIKey(userID int, name string) (string, error) {
 		return "", fmt.Errorf("error al generar token: %v", err)
 	}
 
-	// Crear un hash del token
-	hasher := sha256.New()
-	hasher.Write(tokenBytes)
-	tokenHash := hex.EncodeToString(hasher.Sum(nil))
-
-	// Formato: tbx_<hash>
-	key := fmt.Sprintf("tbx_%s", tokenHash[:32])
+	// Generar la clave API en formato tbx_<random_chars>
+	key := fmt.Sprintf("tbx_%s", hex.EncodeToString(tokenBytes)[:16])
 
 	// Almacenar en la base de datos
 	_, err = DB.Exec(
-		"INSERT INTO api_keys (id, user_id, name, hash) VALUES (?, ?, ?, ?)",
+		"INSERT INTO api_keys (id, user_id, name, key) VALUES (?, ?, ?, ?)",
 		keyID,
 		userID,
 		name,
-		tokenHash,
+		key,
 	)
 
 	if err != nil {
@@ -301,7 +313,7 @@ func CreateAPIKey(userID int, name string) (string, error) {
 	}
 
 	// Devolver la clave en formato legible (solo se muestra una vez)
-	return fmt.Sprintf("%s.%s", keyID, key), nil
+	return key, nil
 }
 
 // Obtiene las claves API de un usuario
@@ -311,6 +323,7 @@ func GetAPIKeys(userID int) ([]APIKey, error) {
 			id,
 			user_id,
 			name,
+			key,
 			created_at,
 			last_used_at,
 			revoked
@@ -329,11 +342,13 @@ func GetAPIKeys(userID int) ([]APIKey, error) {
 	for rows.Next() {
 		var key APIKey
 		var lastUsedAt sql.NullTime
+		var keyString sql.NullString
 
 		err := rows.Scan(
 			&key.ID,
 			&key.UserID,
 			&key.Name,
+			&keyString,
 			&key.CreatedAt,
 			&lastUsedAt,
 			&key.Revoked,
@@ -348,6 +363,11 @@ func GetAPIKeys(userID int) ([]APIKey, error) {
 			key.LastUsedAt = lastUsedAt.Time
 		}
 
+		// Si keyString es válido, establecerlo en la estructura
+		if keyString.Valid {
+			key.Key = keyString.String
+		}
+
 		keys = append(keys, key)
 	}
 
@@ -358,50 +378,25 @@ func GetAPIKeys(userID int) ([]APIKey, error) {
 	return keys, nil
 }
 
-// Obtiene una variable de entorno o un valor por defecto
-func getEnv(key, defaultValue string) string {
-	if value, exists := os.LookupEnv(key); exists {
-		return value
-	}
-	return defaultValue
-}
-
-// Responde con JSON
-func respondJSON(w http.ResponseWriter, status int, data interface{}) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(data)
-}
-
-// RevokeAPIKey revoca una clave API
+// RevokeAPIKey elimina una clave API
 func RevokeAPIKey(userID int, keyID string) error {
-	// Verificar que el usuario sea el propietario de la clave
-	var dbUserID int
-	err := DB.QueryRow(
-		"SELECT user_id FROM api_keys WHERE id = ?",
-		keyID,
-	).Scan(&dbUserID)
-
+	// Eliminar la clave API
+	result, err := DB.Exec("DELETE FROM api_keys WHERE id = ? AND user_id = ?", keyID, userID)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return fmt.Errorf("clave API no encontrada")
-		}
-		return fmt.Errorf("error al verificar la clave API: %v", err)
+		return fmt.Errorf("error al eliminar la clave API: %v", err)
 	}
 
-	if dbUserID != userID {
-		return fmt.Errorf("no autorizado para revocar esta clave")
+	// Verificar que se eliminó alguna fila
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("error al verificar eliminación de clave API: %v", err)
 	}
 
-	// Actualizar la clave como revocada
-	_, err = DB.Exec(
-		"UPDATE api_keys SET revoked = 1, last_used_at = CURRENT_TIMESTAMP WHERE id = ?",
-		keyID,
-	)
-
-	if err != nil {
-		return fmt.Errorf("error al revocar la clave API: %v", err)
+	if rowsAffected == 0 {
+		return fmt.Errorf("clave API no encontrada o no autorizado")
 	}
 
 	return nil
 }
+
+// ...

@@ -2,6 +2,97 @@
 const { h, render } = window.preact || window;
 const { useState, useEffect } = window.preactHooks || window;
 
+// Componente de modal para login con magic link
+function LoginModal({ isOpen, onClose, onSuccess }) {
+  const [email, setEmail] = useState('');
+  const [message, setMessage] = useState('');
+  const [isError, setIsError] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    try {
+      const response = await fetch('/api/auth/request-magic-link', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email })
+      });
+
+      const data = await response.json();
+      
+      if (response.ok) {
+        setMessage('¡Revisa tu correo electrónico para el enlace de inicio de sesión!');
+        setIsError(false);
+        setEmail('');
+        
+        // Cerrar el modal después de 3 segundos
+        setTimeout(() => {
+          onClose();
+          setMessage('');
+        }, 3000);
+      } else {
+        throw new Error(data.message || 'Error al enviar el enlace mágico');
+      }
+    } catch (error) {
+      setMessage(error.message || 'Error al enviar el enlace mágico');
+      setIsError(true);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return h('div', { class: 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50' },
+    h('div', { class: 'bg-white rounded-lg shadow-xl w-full max-w-md' },
+      h('div', { class: 'p-6' },
+        h('div', { class: 'flex justify-between items-center mb-4' },
+          h('h3', { class: 'text-lg font-medium text-gray-900' }, 'Iniciar sesión'),
+          h('button', {
+            onClick: onClose,
+            class: 'text-gray-400 hover:text-gray-500',
+            'aria-label': 'Cerrar'
+          }, '×')
+        ),
+        
+        message && h('div', {
+          class: `p-3 mb-4 rounded ${isError ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`
+        }, message),
+        
+        h('form', { onSubmit: handleSubmit },
+          h('div', { class: 'mb-4' },
+            h('label', {
+              for: 'email',
+              class: 'block text-sm font-medium text-gray-700 mb-1'
+            }, 'Correo electrónico'),
+            h('input', {
+              type: 'email',
+              id: 'email',
+              value: email,
+              onInput: (e) => setEmail(e.target.value),
+              class: 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500',
+              placeholder: 'tucorreo@ejemplo.com',
+              required: true
+            })
+          ),
+          
+          h('div', { class: 'flex justify-end space-x-3' },
+            h('button', {
+              type: 'button',
+              onClick: onClose,
+              class: 'px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
+            }, 'Cancelar'),
+            h('button', {
+              type: 'submit',
+              class: 'px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
+            }, 'Enviar enlace mágico')
+          )
+        )
+      )
+    )
+  );
+}
+
 // Componente de tarjeta de API Key
 function ApiKeyCard({ apiKey, onCopy, onRevoke }) {
   return h('div', { class: 'bg-white rounded-lg shadow p-4 mb-4 flex justify-between items-center' },
@@ -84,47 +175,81 @@ function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [apiKeys, setApiKeys] = useState([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [newKey, setNewKey] = useState(null);
 
-  // Cargar claves API al iniciar
+  // Verificar autenticación y cargar claves API al iniciar
   useEffect(() => {
-    const loadApiKeys = async () => {
+    const checkAuth = async () => {
       try {
-        const response = await fetch('/api/keys/list');
-        
-        if (response.redirected) {
-          // Si el backend redirige, es porque requiere autenticación
-          window.location.href = response.url;
-          return;
-        }
+        const response = await fetch('/api/auth/me', {
+          method: 'GET',
+          credentials: 'include',
+          headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+          }
+        });
         
         if (response.ok) {
-          const data = await response.json();
-          setApiKeys(data.api_keys || []);
+          const userData = await response.json();
+          console.log('Usuario autenticado:', userData.email);
+          setIsAuthenticated(true);
+          await loadApiKeys();
         } else {
-          console.error('Error al cargar claves API');
+          console.log('No autenticado o error en la autenticación');
+          setIsAuthenticated(false);
         }
       } catch (error) {
-        console.error('Error al cargar claves API:', error);
+        console.error('Error al verificar autenticación:', error);
+        setIsAuthenticated(false);
       } finally {
         setIsLoading(false);
       }
     };
 
-    loadApiKeys();
+    const loadApiKeys = async () => {
+      try {
+        const response = await fetch('/api/keys', {
+          method: 'GET',
+          credentials: 'include',
+          headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error('Error al cargar las claves API');
+        }
+        
+        const data = await response.json();
+        // The backend returns {success: true, keys: [...]}
+        setApiKeys(data.keys || []);
+      } catch (error) {
+        console.error('Error al cargar las claves API:', error);
+        throw error; // Propagar el error para manejarlo en checkAuth
+      }
+    };
+
+    checkAuth();
   }, []);
 
   const handleCreateKey = async (keyData) => {
     try {
-      const response = await fetch('/api/keys/create', {
+      const response = await fetch('/api/keys', {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
         },
         body: JSON.stringify({
-          name: keyData.name,
-          permissions: Object.entries(keyData.permissions)
-            .filter((_, value) => value)
+          name: keyData.name || 'Nueva clave',
+          permissions: Object.entries(keyData.permissions || {})
+            .filter(([_, value]) => value)
             .map(([key]) => key)
         })
       });
@@ -178,26 +303,19 @@ function Dashboard() {
     });
   };
 
-  const handleCreateClick = async () => {
-    // Verificar si el usuario está autenticado antes de mostrar el modal
-    try {
-      const response = await fetch('/api/auth/me', {
-        headers: {
-          'X-Requested-With': 'XMLHttpRequest'
-        }
-      });
-      
-      if (response.status === 200) {
-        // Usuario autenticado, mostrar el modal
-        setShowCreateModal(true);
-      } else {
-        // Si no está autenticado, redirigir al login
-        window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
-      }
-    } catch (error) {
-      console.error('Error al verificar autenticación:', error);
-      window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+  const handleCreateClick = () => {
+    if (isAuthenticated) {
+      setShowCreateModal(true);
+    } else {
+      setShowLoginModal(true);
     }
+  };
+
+  const handleLoginSuccess = () => {
+    setShowLoginModal(false);
+    setIsAuthenticated(true);
+    // Recargar las claves después de iniciar sesión
+    loadApiKeys();
   };
 
   const handleRevokeKey = async (keyId) => {
@@ -206,8 +324,15 @@ function Dashboard() {
     }
 
     try {
-      const response = await fetch(`/api/keys/revoke/${keyId}`, {
-        method: 'POST'
+      const response = await fetch(`/api/keys/${keyId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({ key_id: keyId })
       });
 
       if (response.redirected) {
@@ -228,13 +353,57 @@ function Dashboard() {
     }
   };
 
+  // Mostrar loading
   if (isLoading) {
-    return h('div', { class: 'min-h-screen flex items-center justify-center' },
+    return h('div', { class: 'flex justify-center items-center h-64' },
       h('div', { class: 'animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500' })
     );
   }
+  
+  // Mostrar botón de login si no está autenticado
+  if (!isAuthenticated) {
+    return h('div', { class: 'max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8' },
+      h('div', { class: 'bg-white overflow-hidden shadow rounded-lg' },
+        h('div', { class: 'px-4 py-5 sm:p-6 text-center' },
+          h('h2', { class: 'text-2xl font-bold text-gray-900 mb-4' }, 'Acceso requerido'),
+          h('p', { class: 'text-gray-600 mb-6' }, 'Por favor inicia sesión para acceder al panel de control.'),
+          h('button', {
+            onClick: () => setShowLoginModal(true),
+            class: 'px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
+          }, 'Iniciar sesión')
+        )
+      )
+    );
+  }
 
-  return h('div', { class: 'min-h-screen bg-gray-50' },
+  return h('div', { class: 'min-h-screen bg-gray-100' },
+    // Navbar
+    h('nav', { class: 'bg-white shadow-sm' },
+      h('div', { class: 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8' },
+        h('div', { class: 'flex justify-between h-16' },
+          h('div', { class: 'flex' },
+            h('div', { class: 'flex-shrink-0 flex items-center' },
+              h('a', { 
+                href: '/',
+                class: 'px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100'
+              }, '← Volver al inicio')
+            )
+          ),
+          isAuthenticated && h('div', { class: 'flex items-center' },
+            h('a', {
+              href: '/api/auth/logout',
+              class: 'text-sm text-gray-500 hover:text-gray-700',
+              onClick: (e) => {
+                if (!confirm('¿Estás seguro de que quieres cerrar sesión?')) {
+                  e.preventDefault();
+                }
+              }
+            }, 'Cerrar sesión')
+          )
+        )
+      )
+    ),
+
     // Header
     h('header', { class: 'bg-white shadow' },
       h('div', { class: 'max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex justify-between items-center' },
@@ -273,9 +442,16 @@ function Dashboard() {
       )
     ),
 
-    // Modal para crear nueva clave
-    h(CreateKeyModal, {
-      isOpen: showCreateModal,
+    // Renderizar el modal de login
+    showLoginModal && h(LoginModal, {
+      isOpen: true,
+      onClose: () => setShowLoginModal(false),
+      onSuccess: handleLoginSuccess
+    }),
+
+    // Renderizar el modal de crear clave
+    showCreateModal && h(CreateKeyModal, {
+      isOpen: true,
       onClose: () => setShowCreateModal(false),
       onCreate: handleCreateKey
     })

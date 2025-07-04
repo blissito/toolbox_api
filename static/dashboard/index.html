@@ -17,7 +17,7 @@
     .neo-card {
       background: #FFFFFF;
       border: 3px solid #000000;
-      border-radius: 12px;
+
       box-shadow: 8px 8px 0 #000000;
       transition: all 0.2s ease;
     }
@@ -29,7 +29,6 @@
       background: #4F46E5;
       color: white;
       border: 2px solid #000000;
-      border-radius: 8px;
       box-shadow: 4px 4px 0 #000000;
       transition: all 0.2s ease;
       font-weight: 600;
@@ -43,9 +42,12 @@
       transform: translate(1px, 1px);
       box-shadow: 3px 3px 0 #000000;
     }
+    .neo-btn.white{
+      background: #FFF;
+    }
     .neo-input {
       border: 2px solid #000000;
-      border-radius: 8px;
+
       padding: 0.5rem 1rem;
       box-shadow: 3px 3px 0 #000000;
       transition: all 0.2s ease;
@@ -55,19 +57,96 @@
       border-color: #4F46E5;
       box-shadow: 3px 3px 0 #4F46E5;
     }
+        /* Nav link styles */
+    nav a, nav button {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.25rem 0.5rem;
+      transition: all 0.2s ease;
+    }
+    
+    nav a:hover, nav button:hover {
+      background-color: rgba(0, 0, 0, 0.05);
+    }
+    
+    nav a:active, nav button:active {
+      background-color: rgba(0, 0, 0, 0.1);
+    }
+
     .api-key-display {
       letter-spacing: 1px;
       font-family: 'Courier New', monospace;
     }
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.7);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      backdrop-filter: blur(2px);
+    }
+    .modal-content {
+      background: white;
+      padding: 2rem;
+      border: 3px solid #000;
+
+      max-width: 500px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+      position: relative;
+      box-shadow: 8px 8px 0 #000;
+    }
+    .close-button {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: #fff;
+      border: 2px solid #000;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 2px 2px 0 #000;
+      border-radius: 4px;
+    }
+    .close-button:hover {
+      background: #000;
+      color: #fff;
+      transform: translate(1px, 1px);
+      box-shadow: 1px 1px 0 #000;
+    }
   </style>
 </head>
-<body class="min-h-screen flex items-center justify-center p-4">
-  <div id="app" class="w-full max-w-2xl">
-    <div class="neo-card p-8 mb-8">
-      <h1 class="text-3xl font-bold mb-6 text-center">Dashboard de API</h1>
-      <!-- App will be rendered here by Preact -->
+  <body class="min-h-screen bg-gray-100 p-4">
+    <div class="max-w-4xl mx-auto">
+      <!-- Navigation -->
+      <nav class="flex justify-between items-center mb-6">
+        <a href="/" class="neo-btn white px-6 py-3 font-bold text-lg text-black">
+          ← Volver al inicio
+        </a>
+        <a href="/auth/logout" class="text-sm text-gray-500 hover:text-gray-700 transition-colors">
+          Cerrar sesión
+        </a>
+      </nav>
+      
+      <!-- Main content -->
+      <div id="app" class="w-full">
+        <div class="neo-card p-8">
+          <h1 class="text-3xl font-bold mb-6 text-center">Dashboard de API</h1>
+          <!-- App will be rendered here by Preact -->
+        </div>
+      </div>
     </div>
-  </div>
 
   <script>
     // Función para inicializar la aplicación
@@ -96,161 +175,374 @@
         },
 
         async getApiKeys() {
-          const response = await fetch('/api/keys/list', {
-            credentials: 'include'
+          const response = await fetch('/api/keys', {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+              'Accept': 'application/json',
+              'X-Requested-With': 'XMLHttpRequest'
+            }
           });
-          if (!response.ok) throw new Error('Failed to fetch API keys');
+          if (!response.ok) {
+            const error = await response.text();
+            console.error('Error fetching API keys:', error);
+            throw new Error('Failed to fetch API keys');
+          }
           return await response.json();
         },
 
         async createApiKey() {
-          const response = await fetch('/api/keys/create', {
+          const response = await fetch('/api/keys', {
             method: 'POST',
             credentials: 'include',
             headers: {
               'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'X-Requested-With': 'XMLHttpRequest'
             },
+            body: JSON.stringify({ 
+              name: 'Dashboard API Key',
+              permissions: ['read', 'write']
+            }),
           });
-          if (!response.ok) throw new Error('Failed to create API key');
+          if (!response.ok) {
+            const error = await response.text();
+            console.error('Error creating API key:', error);
+            throw new Error('Failed to create API key');
+          }
           return await response.json();
         },
 
-        async revokeApiKey(id) {
-          const response = await fetch(`/api/keys/revoke/${id}`, {
-            method: 'POST',
-            credentials: 'include',
-          });
-          if (!response.ok) throw new Error('Failed to revoke API key');
-          return await response.json();
+
+
+    async deleteApiKey(id) {
+      const response = await fetch(`/api/keys/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
         }
-      };
+      });
+      if (!response.ok) {
+        const error = await response.text();
+        console.error('Error deleting API key:', error);
+        throw new Error('Failed to delete API key');
+      }
+      return await response.json();
+    },
+    };
 
-      // API Key Component
-      function ApiKeySection({ isAuthenticated }) {
-        const [apiKey, setApiKey] = useState('');
-        const [showKey, setShowKey] = useState(false);
+      // Login Modal Component
+      function LoginModal({ isOpen, onClose, onLogin }) {
+        const [email, setEmail] = useState('');
+        const [isSubmitting, setIsSubmitting] = useState(false);
         const [error, setError] = useState(null);
+        const [success, setSuccess] = useState(false);
 
-        useEffect(() => {
-          if (isAuthenticated) {
-            loadApiKey();
-          }
-        }, [isAuthenticated]);
-
-        const loadApiKey = async () => {
+        const handleSubmit = async (e) => {
+          e.preventDefault();
+          setIsSubmitting(true);
+          setError(null);
+          
           try {
-            const data = await apiService.getApiKeys();
-            if (data && data.length > 0) {
-              setApiKey(data[0].key);
+            const response = await fetch('/api/auth/request-magic-link', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ email }),
+            });
+            
+            if (response.ok) {
+              setSuccess(true);
+              setEmail('');
+              // Cerrar el modal después de 2 segundos
+              setTimeout(() => {
+                onClose();
+                setSuccess(false);
+              }, 2000);
+            } else {
+              const errorData = await response.json();
+              setError(errorData.error || 'Error al enviar el enlace de login');
             }
           } catch (err) {
-            setError('Error loading API key');
-            console.error(err);
+            setError('Error de conexión. Inténtalo de nuevo.');
+          } finally {
+            setIsSubmitting(false);
           }
         };
 
+        // Usar useEffect para manejar el renderizado del modal en el body
+        useEffect(() => {
+          if (isOpen) {
+            console.log('Modal se va a mostrar, isOpen:', isOpen);
+            
+            // Crear el contenedor del modal si no existe
+            let modalContainer = document.getElementById('modal-container');
+            if (!modalContainer) {
+              modalContainer = document.createElement('div');
+              modalContainer.id = 'modal-container';
+              document.body.appendChild(modalContainer);
+            }
+
+            // Renderizar el modal en el contenedor
+            const modalElement = h('div', { className: 'modal-overlay', onClick: onClose },
+              h('div', { 
+                className: 'modal-content',
+                onClick: (e) => e.stopPropagation()
+              },
+                h('button', {
+                  className: 'close-button',
+                  onClick: onClose,
+                  'aria-label': 'Cerrar modal'
+                }, '×'),
+                h('h2', { className: 'text-2xl font-bold mb-6 text-center' }, 'Iniciar Sesión'),
+                success ? (
+                  h('div', { className: 'text-center py-8' },
+                    h('div', { className: 'text-green-600 mb-4' },
+                      h('i', { className: 'fas fa-check-circle text-4xl mb-2' }),
+                      h('p', { className: 'text-lg font-semibold' }, '¡Enlace enviado!')
+                    ),
+                    h('p', { className: 'text-gray-600' }, 'Revisa tu correo electrónico y haz clic en el enlace para iniciar sesión.')
+                  )
+                ) : (
+                  h('form', { onSubmit: handleSubmit },
+                    h('div', { className: 'mb-6' },
+                      h('label', { 
+                        htmlFor: 'email',
+                        className: 'block text-sm font-medium text-gray-700 mb-2'
+                      }, 'Correo electrónico'),
+                      h('input', {
+                        type: 'email',
+                        id: 'email',
+                        value: email,
+                        onChange: (e) => setEmail(e.target.value),
+                        className: 'w-full neo-input',
+                        placeholder: 'tu@email.com',
+                        required: true,
+                        disabled: isSubmitting
+                      })
+                    ),
+                    error && (
+                      h('div', { className: 'mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded' },
+                        error
+                      )
+                    ),
+                    h('button', {
+                      type: 'submit',
+                      className: 'w-full neo-btn',
+                      disabled: isSubmitting || !email.trim()
+                    }, isSubmitting ? 'Enviando...' : 'Enviar enlace de login')
+                  )
+                )
+              )
+            );
+
+            render(modalElement, modalContainer);
+          } else {
+            console.log('Modal no se muestra porque isOpen es:', isOpen);
+            // Limpiar el modal cuando se cierra
+            const modalContainer = document.getElementById('modal-container');
+            if (modalContainer) {
+              modalContainer.innerHTML = '';
+            }
+          }
+
+          // Cleanup function
+          return () => {
+            if (!isOpen) {
+              const modalContainer = document.getElementById('modal-container');
+              if (modalContainer) {
+                modalContainer.innerHTML = '';
+              }
+            }
+          };
+        }, [isOpen, success, error, email, isSubmitting]);
+
+        // Este componente no renderiza nada directamente
+        return null;
+      }
+
+      // API Key Component
+      function ApiKeySection({ isAuthenticated, apiKey, setApiKey, onShowLogin }) {
+        const [showKey, setShowKey] = useState(false);
+        const [copied, setCopied] = useState(false);
+
         const handleCreateKey = async () => {
           try {
-            const data = await apiService.createApiKey();
-            setApiKey(data.key);
-            setError(null);
-          } catch (err) {
-            setError('Error creating API key');
-            console.error(err);
+            console.log('Creando nueva API key...');
+            const creationResp = await apiService.createApiKey();
+            const fullKey = creationResp.api_key || creationResp.key || '';
+            console.log('API key creada, recargando lista...');
+            const data = await apiService.getApiKeys();
+            if (data && data.api_keys && data.api_keys.length > 0) {
+              const newKeyObj = { ...data.api_keys[0], key: fullKey };
+              if (fullKey) {
+                localStorage.setItem(`api_key_${data.api_keys[0].id}`, fullKey);
+              }
+              setApiKey(newKeyObj);
+              setShowKey(true);
+            } else {
+              // No debería ocurrir, pero manejamos por si acaso
+              if (fullKey) {
+                localStorage.setItem('api_key_temp', fullKey);
+              }
+              setApiKey({ key: fullKey, key_hint: fullKey.slice(-6) });
+              setShowKey(true);
+            }
+          } catch (error) {
+            console.error('Error al crear la API key:', error);
+            alert('Error al crear la API key. Revisa la consola.');
           }
         };
 
         const handleRegenerateKey = async () => {
-          if (confirm('¿Estás seguro de que deseas regenerar tu API Key? La clave actual dejará de funcionar.')) {
+          if (!apiKey || !apiKey.id) {
+            console.error('No API key ID available for regeneration');
+            return;
+          }
+          
+          if (!confirm('¿Estás seguro? La clave actual será revocada permanentemente.')) {
+            return;
+          }
+          
+          try {
+            console.log(`Regenerando API key ${apiKey.id}...`);
+            
+            // 1. Delete the old key
             try {
-              // Get current keys to find the ID
-              const currentKeys = await apiService.getApiKeys();
-              if (currentKeys && currentKeys.length > 0) {
-                await apiService.revokeApiKey(currentKeys[0].id);
-              }
-              const data = await apiService.createApiKey();
-              setApiKey(data.key);
-              setError(null);
-            } catch (err) {
-              setError('Error regenerating API key');
-              console.error(err);
+              await apiService.deleteApiKey(apiKey.id);
+              console.log('API key eliminada exitosamente');
+            } catch (deleteError) {
+              console.warn('No se pudo eliminar la clave anterior, continuando con la creación de una nueva...', deleteError);
+              // Continuamos aunque falle la eliminación
             }
+            
+            // 2. Create a new key
+            console.log('Creando nueva API key...');
+            const creationResp = await apiService.createApiKey();
+            const fullKey = creationResp.api_key || creationResp.key || '';
+            
+            if (!fullKey) {
+              throw new Error('No se recibió una clave API válida del servidor');
+            }
+            
+            console.log('API key creada exitosamente');
+            
+            // 3. Get the updated list to ensure we have the latest data
+            const data = await apiService.getApiKeys();
+            
+            // 4. Update the UI with the new key
+            if (data && data.api_keys && data.api_keys.length > 0) {
+              // Encontrar la clave recién creada (la más reciente)
+              const newKey = data.api_keys.find(k => k.key_hint === fullKey.slice(-6)) || data.api_keys[0];
+              const newKeyObj = { 
+                ...newKey, 
+                key: fullKey 
+              };
+              
+              // Guardar la clave completa en localStorage
+              localStorage.setItem(`api_key_${newKey.id}`, fullKey);
+              
+              // Actualizar el estado
+              setApiKey(newKeyObj);
+              setShowKey(true);
+              
+            } else {
+              // Si no hay claves en la respuesta, usar la que acabamos de crear
+              const newKeyObj = { 
+                id: 'temp_' + Date.now(),
+                key: fullKey, 
+                key_hint: fullKey.slice(-6) 
+              };
+              
+              localStorage.setItem('api_key_temp', fullKey);
+              setApiKey(newKeyObj);
+              setShowKey(true);
+
+            }
+          } catch (error) {
+            console.error('Error al regenerar la API key:', error);
+            alert(`Error al regenerar la API key: ${error.message || 'Error desconocido'}`);
           }
         };
 
+        const getFullKey = () => {
+          if (!apiKey) return '';
+          // El backend puede devolver la clave completa en diferentes propiedades
+          return apiKey.key || apiKey.api_key || '';
+        };
+
         const copyToClipboard = () => {
-          navigator.clipboard.writeText(apiKey);
-          alert('API Key copiada al portapapeles');
+          const fullKey = getFullKey();
+          if (!fullKey) {
+            alert('No hay una clave completa para copiar. Debes generar o regenerar la clave para verla completa.');
+            return;
+          }
+          navigator.clipboard.writeText(fullKey).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+          });
         };
 
         if (!isAuthenticated) {
           return (
-            h('div', { className: 'text-center py-8' },
-              h('p', { className: 'mb-4' }, 'Debes iniciar sesión para acceder a tu API Key'),
+            h('div', { className: 'text-center' },
+              h('p', { className: 'mb-4' }, 'Necesitas iniciar sesión para gestionar tu API key.'),
               h('button', {
-                className: 'neo-btn',
-                onClick: () => window.location.href = '/login'
+                onClick: onShowLogin,
+                className: 'neo-btn'
               }, 'Iniciar sesión')
             )
           );
         }
 
-        if (error) {
+        if (apiKey && (apiKey.key || apiKey.key_hint)) {
           return (
-            h('div', { className: 'text-center py-8 text-red-600' },
-              h('p', { className: 'mb-4' }, error),
-              h('button', {
-                className: 'neo-btn',
-                onClick: loadApiKey
-              }, 'Reintentar')
-            )
-          );
-        }
-
-        if (!apiKey) {
-          return (
-            h('div', { className: 'text-center py-8' },
-              h('p', { className: 'mb-4' }, 'No tienes una API Key generada.'),
-              h('button', {
-                className: 'neo-btn',
-                onClick: handleCreateKey
-              }, 'Generar API Key')
+            h('div', null,
+              h('h2', { className: 'text-xl font-semibold mb-4' }, 'Tu API Key'),
+              h('div', { className: 'p-4 bg-gray-50 rounded-lg flex items-center justify-between' },
+                h('span', { className: 'api-key-display text-gray-700 truncate' },
+                  showKey ? getFullKey() : `••••••••••••••••${apiKey.key_hint || ''}`
+                ),
+                h('div', { className: 'flex items-center space-x-2' },
+                  h('button', { 
+                    onClick: () => setShowKey(!showKey), 
+                    className: 'neo-btn',
+                    title: showKey ? 'Ocultar clave' : 'Mostrar clave'
+                  }, h('i', { className: `fa-solid ${showKey ? 'fa-eye-slash' : 'fa-eye'}` })),
+                  h('button', { 
+                    onClick: copyToClipboard, 
+                    className: 'neo-btn',
+                    title: 'Copiar al portapapeles'
+                  }, copied ? 'Copiado!' : h('i', { className: 'fa-solid fa-copy' })),
+                  h('button', { 
+                    onClick: handleRegenerateKey, 
+                    className: 'neo-btn',
+                    title: 'Regenerar clave'
+                  }, h('i', { className: 'fa-solid fa-arrows-rotate' }))
+                )
+              )
             )
           );
         }
 
         return (
-          h('div', { className: 'space-y-4 mb-8' },
-            h('h2', { className: 'text-xl font-semibold mb-4' }, 'Tu API Key'),
-            h('div', { className: 'flex items-center gap-2 mb-4' },
-              h('div', { className: 'relative flex-1' },
-                h('input', {
-                  id: 'apiKey',
-                  type: showKey ? 'text' : 'password',
-                  value: apiKey,
-                  readOnly: true,
-                  className: 'w-full neo-input api-key-display',
-                  style: { paddingRight: '2.5rem' }
-                }),
-                h('button', {
-                  className: 'absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-600 hover:text-gray-800',
-                  onClick: () => setShowKey(!showKey),
-                  type: 'button',
-                  'aria-label': showKey ? 'Ocultar clave' : 'Mostrar clave'
-                }, h('i', { className: showKey ? 'fas fa-eye-slash' : 'fas fa-eye' }))
-              ),
-              h('button', {
-                className: 'neo-btn bg-blue-600',
-                onClick: copyToClipboard,
-                type: 'button'
-              }, h('i', { className: 'fas fa-copy mr-2' }), 'Copiar')
+          h('div', { className: 'text-center p-6 bg-white rounded-lg shadow-inner border-2 border-dashed border-gray-300' },
+            h('div', { className: 'mb-6' },
+              h('i', { className: 'fas fa-key text-4xl text-gray-400 mb-3' })
             ),
-            h('div', { className: 'flex justify-end' },
-              h('button', {
-                className: 'neo-btn bg-red-500 hover:bg-red-600',
-                onClick: handleRegenerateKey,
-                type: 'button'
-              }, h('i', { className: 'fas fa-sync-alt mr-2' }), 'Regenerar')
+            h('h3', { className: 'text-xl font-semibold text-gray-800 mb-2' }, 'Sin claves API'),
+            h('p', { className: 'text-gray-600 mb-6' }, 'Aún no has generado una clave API. ¡Crea una para empezar a usar los servicios!'),
+            h('button', { 
+              onClick: handleCreateKey, 
+              className: 'neo-btn bg-neon-green hover:bg-neon-green-dark text-black font-semibold py-3 px-6 text-lg transition-all duration-200 transform hover:scale-105',
+              style: { minWidth: '200px' }
+            }, 
+              h('i', { className: 'fas fa-plus-circle mr-2' }),
+              'Crear mi primera API Key'
             )
           )
         );
@@ -283,32 +575,84 @@
       // Main App Component
       function App() {
         const [isAuthenticated, setIsAuthenticated] = useState(false);
-        const [authChecked, setAuthChecked] = useState(false);
+        const [apiKey, setApiKey] = useState(null);
+        const [dataLoaded, setDataLoaded] = useState(false);
+        const [showLoginModal, setShowLoginModal] = useState(false);
 
         useEffect(() => {
-          const checkAuth = async () => {
+          const loadInitialData = async () => {
             try {
+              console.log('Verificando autenticación...');
               await apiService.checkAuth();
+              console.log('Usuario autenticado.');
               setIsAuthenticated(true);
+              
+              console.log('Cargando API keys...');
+              const keyData = await apiService.getApiKeys();
+              console.log('Respuesta de getApiKeys:', keyData);
+              
+              // Handle different response formats
+              const apiKeys = keyData.api_keys || keyData.keys || [];
+              
+              if (Array.isArray(apiKeys) && apiKeys.length > 0) {
+                console.log('API key(s) encontrada(s):', apiKeys);
+                const firstKey = { ...apiKeys[0] };
+                
+                // Try to recover the full key from localStorage if available
+                if (firstKey.id) {
+                  const storedKey = localStorage.getItem(`api_key_${firstKey.id}`);
+                  if (storedKey) {
+                    firstKey.key = storedKey;
+                  }
+                }
+                
+                // If we don't have a key but have a key_hint, use it
+                if (!firstKey.key && firstKey.key_hint) {
+                  firstKey.key = firstKey.key_hint;
+                }
+                
+                setApiKey(firstKey);
+              } else {
+                console.log('No se encontraron API keys en la respuesta.');
+                setApiKey(null);
+              }
             } catch (error) {
+              console.log('Usuario no autenticado o error al cargar datos.');
               setIsAuthenticated(false);
+              setApiKey(null);
             } finally {
-              setAuthChecked(true);
+              setDataLoaded(true);
+              console.log('Carga inicial de datos completada.');
             }
           };
 
-          checkAuth();
+          loadInitialData();
         }, []);
 
-        // Don't render anything until auth is checked
-        if (!authChecked) {
+        if (!dataLoaded) {
           return null;
         }
 
         return (
-          h('div', { className: 'space-y-8' },
-            h(ApiKeySection, { isAuthenticated }),
-            h(DocumentationSection)
+          h('div', null,
+            // Main content only - navigation is now in the static HTML
+            h('div', { className: 'space-y-8' },
+              h(ApiKeySection, { 
+                isAuthenticated,
+                apiKey,
+                setApiKey,
+                onShowLogin: () => setShowLoginModal(true)
+              }),
+              h(DocumentationSection)
+            ),
+            h(LoginModal, {
+              isOpen: showLoginModal,
+              onClose: () => setShowLoginModal(false),
+              onLogin: () => {
+                setShowLoginModal(false);
+                setTimeout(() => window.location.reload(), 1000);
+              }
+            })
           )
         );
       }

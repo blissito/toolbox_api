@@ -2,7 +2,9 @@ package api
 
 import (
 	"bytes"
+	"crypto/rand"
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -30,23 +32,32 @@ func SetupRoutes(mux *http.ServeMux, database *sql.DB) {
 	// Configurar la base de datos en el paquete auth
 	auth.SetDB(database)
 
-	// Ruta para solicitar un enlace mágico
+	// Authentication routes
 	mux.HandleFunc("/api/auth/request-magic-link", handleRequestMagicLink)
-
-	// Ruta para validar un token mágico
 	mux.HandleFunc("/api/auth/validate", handleValidateMagicLink)
-
-	// Ruta para crear una nueva clave API
-	mux.HandleFunc("/api/keys/create", handleCreateAPIKey)
-
-	// Ruta para listar claves API
-	mux.HandleFunc("/api/keys/list", handleListAPIKeys)
-
-	// Ruta para revocar una clave API
-	mux.HandleFunc("/api/keys/revoke/", handleRevokeAPIKey)
-
-	// Ruta para obtener información del usuario autenticado
 	mux.HandleFunc("/api/auth/me", handleGetCurrentUser)
+	mux.HandleFunc("/auth/logout", handleLogout)
+
+	// API Key management routes
+	mux.HandleFunc("/api/keys", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			handleListAPIKeys(w, r)
+		case http.MethodPost:
+			handleCreateAPIKey(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+
+	// API Key deletion route (using DELETE method)
+	mux.HandleFunc("/api/keys/", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodDelete {
+			handleDeleteAPIKey(w, r)
+		} else {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
 
 	// Ruta para herramientas como webfetch
 	mux.HandleFunc("/api/tool", handleTool)
@@ -118,32 +129,33 @@ func handleRequestMagicLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Enviar correo con el enlace mágico
-	log.Printf("Intentando enviar correo a: %s", req.Email)
-	err = email.SendMagicLink(req.Email, token, r.Host)
-	if err != nil {
-		log.Printf("Error al enviar correo: %v", err)
-
-		// En desarrollo, devolver el enlace mágico directamente
-		if os.Getenv("ENV") == "development" {
-			magicLink := fmt.Sprintf("http://%s/api/auth/validate?token=%s", r.Host, token)
-			json.NewEncoder(w).Encode(map[string]string{
-				"message":    "Error al enviar correo (modo desarrollo)",
-				"magic_link": magicLink,
-			})
-			return
-		}
-
-		w.WriteHeader(http.StatusInternalServerError)
+	// En desarrollo, mostrar el enlace mágico directamente
+	if os.Getenv("ENV") == "development" {
+		magicLink := fmt.Sprintf("http://%s/api/auth/validate?token=%s", r.Host, token)
+		log.Printf("Enlace mágico (desarrollo): %s", magicLink)
 		json.NewEncoder(w).Encode(map[string]string{
-			"error": "Error al enviar el correo electrónico con el enlace de inicio de sesión",
+			"message":    "Enlace mágico (modo desarrollo)",
+			"magic_link": magicLink,
 		})
 		return
 	}
 
-	// Responder al cliente con éxito
+	// En producción, intentar enviar el correo
+	log.Printf("Producción: Intentando enviar enlace mágico a %s", req.Email)
+	
+	err = email.SendMagicLink(req.Email, token, r.Host)
+	if err != nil {
+		log.Printf("Error al enviar correo en producción: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{
+			"error": "Error al enviar el correo de inicio de sesión",
+		})
+		return
+	}
+	
+	log.Printf("Correo de enlace mágico enviado exitosamente a %s", req.Email)
 	json.NewEncoder(w).Encode(map[string]string{
-		"message": "Se ha enviado un enlace de inicio de sesión a tu correo electrónico",
+		"message": "Se ha enviado un enlace de inicio de sesión al correo: " + req.Email,
 	})
 }
 
@@ -197,113 +209,369 @@ func handleValidateMagicLink(w http.ResponseWriter, r *http.Request) {
 	// Crear una respuesta HTML que:
 	// 1. Almacena el token en localStorage
 	// 2. Redirige al dashboard
-	html := fmt.Sprintf(`
-	<!DOCTYPE html>
-	<html>
-	<head>
-		<title>Redirigiendo...</title>
-		<script>
-			document.addEventListener('DOMContentLoaded', function() {
-				try {
-					// Guardar el token en localStorage
-					localStorage.setItem('token', '%s');
-					
-					// Verificar si la cookie se estableció correctamente
-					const cookies = document.cookie.split(';').map(c => c.trim());
-					const hasSessionCookie = cookies.some(c => c.startsWith('session_token='));
-					
-					if (!hasSessionCookie) {
-						console.error('No se pudo establecer la cookie de sesión');
-					}
-					
-					// Redirigir al dashboard
-					window.location.href = '/dash';
-				} catch (error) {
-					console.error('Error al procesar la autenticación:', error);
-					document.body.innerHTML = '<h1>Error</h1><p>Ocurrió un error al iniciar sesión. Por favor, inténtalo de nuevo.</p>';
-				}
-			});
-		</script>
-	</head>
-	<body>
-		<p>Iniciando sesión... Por favor, espera.</p>
-	</body>
-	</html>
-	`, jwtToken)
-
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(html))
-	return
+	fmt.Fprintf(w, `<!DOCTYPE html>
+<html>
+<head>
+	<title>Iniciando sesión...</title>
+	<script>
+		document.addEventListener('DOMContentLoaded', function() {
+			try {
+				// Almacenar el token JWT en localStorage
+				window.localStorage.setItem('jwt', '%s');
+				
+				// Redirigir al dashboard
+				window.location.href = '/dash';
+			} catch (error) {
+				console.error('Error al procesar la autenticación:', error);
+				document.body.innerHTML = '<h1>Error</h1><p>Ocurrió un error al iniciar sesión. Por favor, inténtalo de nuevo.</p>';
+			}
+		});
+	</script>
+</head>
+<body>
+	<p>Iniciando sesión... Por favor, espera.</p>
+</body>
+</html>`, jwtToken)
+}
+
+// generateAPIKey genera una nueva clave API en formato tbx_<random_chars>
+func generateAPIKey() (string, error) {
+	key, err := generateRandomString(16) // 16 caracteres aleatorios
+	if err != nil {
+		return "", fmt.Errorf("error generando clave API: %v", err)
+	}
+	return "tbx_" + key, nil
+}
+
+// generateRandomString genera una cadena aleatoria segura de la longitud especificada
+func generateRandomString(length int) (string, error) {
+	// Asegurarnos de tener suficientes bytes para la longitud solicitada
+	// Cada byte se convierte a 1.33 caracteres en base64, así que necesitamos al menos length/1.33 bytes
+	bytesNeeded := (length*6 + 7) / 8 // Cálculo seguro para asegurar suficientes caracteres
+	if bytesNeeded < 1 {
+		bytesNeeded = 1
+	}
+
+	b := make([]byte, bytesNeeded)
+	_, err := rand.Read(b)
+	if err != nil {
+		return "", fmt.Errorf("error al leer bytes aleatorios: %v", err)
+	}
+
+	// Codificar a base64 y asegurarnos de que tenga al menos la longitud solicitada
+	encoded := base64.URLEncoding.EncodeToString(b)
+	if len(encoded) < length {
+		// Si por alguna razón es más corto, concatenar con más caracteres aleatorios
+		for len(encoded) < length {
+			more, err := generateRandomString(length - len(encoded))
+			if err != nil {
+				return "", fmt.Errorf("error al generar cadena aleatoria adicional: %v", err)
+			}
+			encoded += more
+		}
+	}
+
+	// Tomar exactamente la longitud solicitada
+	return encoded[:length], nil
+}
+
+// getUserIDByEmail obtiene el ID de usuario por su email
+func getUserIDByEmail(email string) (int64, error) {
+	var userID int64
+	err := db.QueryRow("SELECT id FROM users WHERE email = ?", email).Scan(&userID)
+	if err != nil {
+		return 0, fmt.Errorf("error al obtener ID de usuario: %v", err)
+	}
+
+	return userID, nil
+}
+
+// validateAPIKey valida una clave API y devuelve el email del usuario si es válida
+func validateAPIKey(key string) (string, error) {
+	// Verificar que la clave tenga el formato correcto
+	if !strings.HasPrefix(key, "tbx_") {
+		return "", fmt.Errorf("formato de clave API inválido")
+	}
+
+	var email string
+	err := db.QueryRow(
+		"SELECT u.email FROM users u "+
+			"JOIN api_keys ak ON u.id = ak.user_id "+
+			"WHERE ak.key = ? AND (ak.revoked = 0 OR ak.revoked IS NULL)",
+		key,
+	).Scan(&email)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return "", fmt.Errorf("clave API no válida o revocada")
+		}
+		return "", fmt.Errorf("error validando la clave API: %v", err)
+	}
+
+	// Actualizar last_used_at
+	_, err = db.Exec("UPDATE api_keys SET last_used_at = CURRENT_TIMESTAMP WHERE key = ?", key)
+	if err != nil {
+		log.Printf("Error actualizando last_used_at: %v", err)
+		// Continuamos a pesar del error, no es crítico
+	}
+
+	return email, nil
+}
+
+// handleGetCurrentUser maneja la solicitud para obtener el usuario actual
+func handleGetCurrentUser(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	email, err := getAuthenticatedEmail(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{
+		"email": email,
+	})
 }
 
 // handleCreateAPIKey maneja la creación de una nueva clave API
 func handleCreateAPIKey(w http.ResponseWriter, r *http.Request) {
-	// Solo permitir método POST
-	if r.Method != http.MethodPost {
-		http.Error(w, "Método no permitido", http.StatusMethodNotAllowed)
-		return
-	}
-
 	// Obtener el email del usuario autenticado
 	email, err := getAuthenticatedEmail(r)
 	if err != nil {
-		// Si es una solicitud AJAX, devolver un error 401 con una URL de redirección
-		if r.Header.Get("X-Requested-With") == "XMLHttpRequest" {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(map[string]interface{}{
-				"error":    "Se requiere autenticación",
-				"redirect": "/login?redirect=" + url.QueryEscape(r.URL.Path),
-			})
-		} else {
-			// Redirigir directamente para solicitudes normales
-			http.Redirect(w, r, "/login?redirect="+url.QueryEscape(r.URL.Path), http.StatusFound)
-		}
-		return
-	}
-
-	// Leer el cuerpo de la solicitud
-	var req struct {
-		Name string `json:"name"`
-	}
-
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Solicitud inválida", http.StatusBadRequest)
-		return
-	}
-
-	// Validar que se proporcione un nombre
-	if req.Name == "" {
-		http.Error(w, "Se requiere un nombre para la clave API", http.StatusBadRequest)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": false,
+			"error":   "Se requiere autenticación",
+		})
 		return
 	}
 
 	// Obtener el ID del usuario
 	userID, err := getUserIDByEmail(email)
 	if err != nil {
-		http.Error(w, "Error al obtener información del usuario", http.StatusInternalServerError)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": false,
+			"error":   "Error al obtener el ID de usuario",
+		})
 		return
 	}
 
 	// Generar una nueva clave API
-	key, err := auth.CreateAPIKey(userID, req.Name)
+	apiKey, err := generateAPIKey()
 	if err != nil {
-		http.Error(w, "Error al generar clave API: "+err.Error(), http.StatusInternalServerError)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": false,
+			"error":   "Error al generar la clave API",
+		})
 		return
 	}
 
-	// Devolver la nueva clave API
-	respondJSON(w, http.StatusOK, map[string]interface{}{
+	// Generar un ID único para la clave
+	keyID, err := generateRandomString(8)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": false,
+			"error":   "Error al generar el ID de la clave",
+		})
+		return
+	}
+
+	// Insertar la nueva clave en la base de datos
+	_, err = db.Exec(
+		"INSERT INTO api_keys (id, user_id, name, key, created_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)",
+		keyID,
+		userID,
+		"Clave generada "+time.Now().Format("2006-01-02 15:04"),
+		apiKey,
+	)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": false,
+			"error":   "Error al guardar la clave API",
+		})
+		return
+	}
+
+	// Devolver la clave generada
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
 		"success": true,
-		"api_key": key,
+		"key":     apiKey,
+		"id":      keyID,
 	})
 }
 
-// getAuthenticatedEmail obtiene el email del usuario autenticado ya sea por cookie o API key
+// handleDeleteAPIKey maneja la eliminación de una clave API
+func handleDeleteAPIKey(w http.ResponseWriter, r *http.Request) {
+	// Obtener el ID de la clave de la URL
+	keyID := strings.TrimPrefix(r.URL.Path, "/api/keys/")
+	if keyID == "" {
+		http.Error(w, "Se requiere el ID de la clave", http.StatusBadRequest)
+		return
+	}
+
+	// Obtener el email del usuario autenticado
+	email, err := getAuthenticatedEmail(r)
+	if err != nil {
+		http.Error(w, "No autorizado", http.StatusUnauthorized)
+		return
+	}
+
+	// Obtener el ID del usuario
+	userID, err := getUserIDByEmail(email)
+	if err != nil {
+		http.Error(w, "Error al obtener el ID de usuario", http.StatusInternalServerError)
+		return
+	}
+
+	// Verificar que la clave pertenece al usuario y eliminarla
+	result, err := db.Exec(
+		"DELETE FROM api_keys WHERE id = ? AND user_id = ?",
+		keyID,
+		userID,
+	)
+
+	if err != nil {
+		http.Error(w, "Error al eliminar la clave API", http.StatusInternalServerError)
+		return
+	}
+
+	// Verificar que se eliminó alguna fila
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		http.Error(w, "Error al verificar la eliminación", http.StatusInternalServerError)
+		return
+	}
+
+	if rowsAffected == 0 {
+		http.Error(w, "Clave no encontrada o no tienes permiso para eliminarla", http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]bool{
+		"success": true,
+	})
+}
+
+// handleListAPIKeys maneja la lista de claves API del usuario
+// handleLogout handles user logout by clearing the session cookie
+func handleLogout(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet && r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Clear the session cookie
+	http.SetCookie(w, &http.Cookie{
+		Name:     "session_token",
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1, // Delete the cookie
+		HttpOnly: true,
+		Secure:   os.Getenv("ENV") == "production", // Secure in production only
+		SameSite: http.SameSiteLaxMode,
+	})
+
+	// Redirect to home page after logout
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func handleListAPIKeys(w http.ResponseWriter, r *http.Request) {
+	// Obtener el email del usuario autenticado
+	email, err := getAuthenticatedEmail(r)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": false,
+			"error":   "Se requiere autenticación",
+		})
+		return
+	}
+
+	// Obtener el ID del usuario
+	userID, err := getUserIDByEmail(email)
+	if err != nil {
+		http.Error(w, "Error al obtener el ID de usuario", http.StatusInternalServerError)
+		return
+	}
+
+	// Obtener las claves del usuario desde la base de datos
+	rows, err := db.Query(
+		"SELECT id, name, key, created_at, last_used_at "+
+			"FROM api_keys WHERE user_id = ? "+
+			"ORDER BY created_at DESC",
+		userID,
+	)
+	if err != nil {
+		log.Printf("Error al consultar claves API: %v", err)
+		http.Error(w, "Error al obtener las claves API", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	// Procesar los resultados
+	var keys []map[string]interface{}
+	for rows.Next() {
+		var id, name, key string
+		var createdAt, lastUsedAt sql.NullTime
+
+		if err := rows.Scan(&id, &name, &key, &createdAt, &lastUsedAt); err != nil {
+			log.Printf("Error escaneando fila: %v", err)
+			continue
+		}
+
+		keyData := map[string]interface{}{
+			"id":         id,
+			"name":       name,
+			"created_at": createdAt.Time.Format(time.RFC3339),
+		}
+
+		// Solo incluir la clave si fue generada recientemente (últimos 5 minutos)
+		// y está en el almacenamiento local del navegador
+		if time.Since(createdAt.Time) < 5*time.Minute {
+			keyData["key"] = key
+		}
+
+		if lastUsedAt.Valid {
+			keyData["last_used_at"] = lastUsedAt.Time.Format(time.RFC3339)
+		}
+
+		keys = append(keys, keyData)
+	}
+
+	if err = rows.Err(); err != nil {
+		log.Printf("Error iterando sobre claves API: %v", err)
+		http.Error(w, "Error al procesar las claves API", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"keys":    keys,
+	})
+}
+
 func getAuthenticatedEmail(r *http.Request) (string, error) {
 	// 1. Intentar obtener el token del encabezado Authorization
 	authHeader := r.Header.Get("Authorization")
+	// ... (rest of the code remains the same)
 	if authHeader != "" {
 		// Formato: "Bearer <token>"
 		headerParts := strings.Split(authHeader, " ")
@@ -317,58 +585,13 @@ func getAuthenticatedEmail(r *http.Request) (string, error) {
 			}
 
 			// Si no es un JWT válido, intentar como API key
-			apiKey := token
-
-			// Si la clave API tiene el formato ID.tbx_HASH, extraer el ID y el hash
-			var keyID, keySuffix string
-			if strings.Contains(apiKey, ".tbx_") {
-				keyParts := strings.SplitN(apiKey, ".", 2)
-				if len(keyParts) == 2 {
-					keyID = keyParts[0]
-					keySuffix = keyParts[1] // tbx_...
-				}
-			} else {
-				// Si no tiene el formato esperado, asumir que es solo el ID
-				keyID = apiKey
-			}
-			
-			// Si tenemos el sufijo (tbx_...), buscar por hash también
-			// De lo contrario, buscar solo por ID
-
-			// Buscar el usuario por API key
-			var email string
-			query := `SELECT u.email, ak.hash 
-			 FROM api_keys ak 
-			 JOIN users u ON ak.user_id = u.id 
-			 WHERE ak.id = ? 
-			 AND ak.revoked = 0`
-
-			var storedHash string
-			err = db.QueryRow(query, keyID).Scan(&email, &storedHash)
-
-			// Si encontramos un registro, verificar el hash si es necesario
-			if err == nil && keySuffix != "" {
-				// El hash almacenado debería terminar con el sufijo que nos dieron
-				if !strings.HasSuffix(storedHash, strings.TrimPrefix(keySuffix, "tbx_")) {
-					return "", fmt.Errorf("API key inválida: hash no coincide")
-				}
-			}
-
-			if err != nil {
-				if err == sql.ErrNoRows {
-					return "", fmt.Errorf("API key inválida, expirada o revocada")
-				}
-				return "", fmt.Errorf("error al validar la API key: %v", err)
-			}
-
-			if email != "" {
-				// Actualizar last_used_at
-				_, _ = db.Exec(
-					"UPDATE api_keys SET last_used_at = CURRENT_TIMESTAMP WHERE id = ?",
-					keyID,
-				)
+			email, err := validateAPIKey(token)
+			if err == nil {
 				return email, nil
 			}
+
+			// Si llegamos aquí, el token no es válido
+			return "", fmt.Errorf("invalid or expired token")
 		}
 	}
 
@@ -384,211 +607,32 @@ func getAuthenticatedEmail(r *http.Request) (string, error) {
 
 	// 3. Intentar con token en el body (para peticiones JSON)
 	if r.Header.Get("Content-Type") == "application/json" && r.ContentLength > 0 {
-		var body struct {
-			Token string `json:"token"`
-		}
-
-		// Guardar el body original para que pueda ser leído nuevamente
+		// Guardar el body original
 		bodyBytes, _ := io.ReadAll(r.Body)
 		r.Body.Close()
 		r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 
-		if err := json.NewDecoder(bytes.NewReader(bodyBytes)).Decode(&body); err == nil && body.Token != "" {
+		var body struct {
+			Token string `json:"token"`
+		}
+
+		if err := json.Unmarshal(bodyBytes, &body); err == nil && body.Token != "" {
+			// Primero intentar como JWT
 			claims, err := auth.ValidateToken(body.Token)
 			if err == nil {
 				return claims.Email, nil
+			}
+
+			// Luego intentar como API key
+			email, err := validateAPIKey(body.Token)
+			if err == nil {
+				return email, nil
 			}
 		}
 	}
 
 	// Si llegamos hasta aquí, no se pudo autenticar al usuario
-	return "", fmt.Errorf("se requiere autenticación: %v", "token no válido o expirado")
-}
-
-// handleListAPIKeys maneja la lista de claves API del usuario
-func handleListAPIKeys(w http.ResponseWriter, r *http.Request) {
-	// Obtener el email del usuario autenticado
-	email, err := getAuthenticatedEmail(r)
-	if err != nil {
-		// Si es una solicitud AJAX, devolver un error 401 con una URL de redirección
-		if r.Header.Get("X-Requested-With") == "XMLHttpRequest" {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(map[string]interface{}{
-				"error":    "Se requiere autenticación",
-				"redirect": "/login?redirect=" + url.QueryEscape(r.URL.Path),
-			})
-		} else {
-			// Redirigir directamente para solicitudes normales
-			http.Redirect(w, r, "/login?redirect="+url.QueryEscape(r.URL.Path), http.StatusFound)
-		}
-		return
-	}
-
-	// Obtener el ID del usuario
-	userID, err := getUserIDByEmail(email)
-	if err != nil {
-		http.Error(w, "Error al obtener información del usuario", http.StatusInternalServerError)
-		return
-	}
-
-	// Obtener las claves API del usuario
-	keys, err := auth.GetAPIKeys(userID)
-	if err != nil {
-		http.Error(w, "Error al obtener claves API: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// Devolver la lista de claves API
-	respondJSON(w, http.StatusOK, map[string]interface{}{
-		"api_keys": keys,
-	})
-}
-
-// handleGetCurrentUser devuelve la información del usuario autenticado
-func handleGetCurrentUser(w http.ResponseWriter, r *http.Request) {
-	// Obtener el email del usuario autenticado
-	email, err := getAuthenticatedEmail(r)
-	if err != nil {
-		respondJSON(w, http.StatusUnauthorized, map[string]string{"error": "No autorizado"})
-		return
-	}
-
-	// Devolver la información del usuario
-	respondJSON(w, http.StatusOK, map[string]interface{}{
-		"email": email,
-	})
-}
-
-// handleRevokeAPIKey maneja la revocación de una clave API
-func handleRevokeAPIKey(w http.ResponseWriter, r *http.Request) {
-	// Configurar el encabezado de respuesta como JSON
-	w.Header().Set("Content-Type", "application/json")
-
-	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		json.NewEncoder(w).Encode(map[string]string{
-			"error": "Método no permitido",
-		})
-		return
-	}
-
-	// Obtener el email del usuario autenticado
-	email, err := getAuthenticatedEmail(r)
-	if err != nil {
-		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]string{
-			"error": "Se requiere autenticación",
-		})
-		return
-	}
-
-	// Obtener el ID del usuario
-	userID, err := getUserIDByEmail(email)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]string{
-			"error": "Error al obtener información del usuario",
-		})
-		return
-	}
-
-	// Obtener el ID de la clave a revocar del cuerpo de la petición
-	var requestBody struct {
-		KeyID string `json:"key_id"`
-	}
-
-	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{
-			"error": "Formato de solicitud inválido",
-		})
-		return
-	}
-
-	// Validar que se proporcionó un ID de clave
-	if requestBody.KeyID == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{
-			"error": "Se requiere el ID de la clave a revocar",
-		})
-		return
-	}
-
-	// Revocar la clave
-	err = auth.RevokeAPIKey(userID, requestBody.KeyID)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]string{
-			"error": fmt.Sprintf("Error al revocar la clave: %v", err),
-		})
-		return
-	}
-
-	// Devolver éxito
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{
-		"message": "Clave API revocada exitosamente",
-	})
-}
-
-// getUserIDByEmail busca el ID de usuario a partir del email
-func getUserIDByEmail(email string) (int, error) {
-	var userID int
-
-	// Primero intentamos buscar el usuario
-	err := db.QueryRow("SELECT id FROM users WHERE email = ?", email).Scan(&userID)
-	if err == nil {
-		// Usuario encontrado
-		return userID, nil
-	}
-
-	if err != sql.ErrNoRows {
-		// Hubo un error en la consulta
-		return 0, fmt.Errorf("error al buscar usuario: %v", err)
-	}
-
-	// Si llegamos aquí, el usuario no existe, así que lo creamos
-	tx, err := db.Begin()
-	if err != nil {
-		return 0, fmt.Errorf("error al iniciar transacción: %v", err)
-	}
-	defer tx.Rollback()
-
-	// Insertar el nuevo usuario
-	result, err := tx.Exec("INSERT OR IGNORE INTO users (email) VALUES (?)", email)
-	if err != nil {
-		return 0, fmt.Errorf("error al crear usuario: %v", err)
-	}
-
-	// Obtener el ID del usuario recién creado
-	id, err := result.LastInsertId()
-	if err != nil {
-		return 0, fmt.Errorf("error al obtener ID de usuario: %v", err)
-	}
-
-	// Si el ID es 0, significa que el usuario ya existía (por el OR IGNORE)
-	if id == 0 {
-		err = tx.QueryRow("SELECT id FROM users WHERE email = ?", email).Scan(&userID)
-		if err != nil {
-			return 0, fmt.Errorf("error al obtener ID de usuario existente: %v", err)
-		}
-		return userID, tx.Commit()
-	}
-
-	// Todo salió bien, hacemos commit de la transacción
-	if err := tx.Commit(); err != nil {
-		return 0, fmt.Errorf("error al hacer commit de la transacción: %v", err)
-	}
-
-	return int(id), nil
-}
-
-// respondJSON envía una respuesta JSON
-func respondJSON(w http.ResponseWriter, status int, data interface{}) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(data)
+	return "", fmt.Errorf("se requiere autenticación")
 }
 
 // handleTool maneja las solicitudes a /api/tool
@@ -774,7 +818,6 @@ func handleWebFetch(w http.ResponseWriter, payload map[string]interface{}) {
 	}
 	defer resp.Body.Close()
 
-	// Leer el cuerpo de la respuesta
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		sendError(http.StatusInternalServerError, "read_response_failed", "Error al leer la respuesta del servidor remoto", map[string]string{

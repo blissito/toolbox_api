@@ -1,4 +1,4 @@
-.PHONY: build run stop clean rebuild
+.PHONY: build run stop clean rebuild migrate migrate-fly
 
 build:
 	podman build -t toolbox-api .
@@ -9,6 +9,18 @@ run: stop build
 		-v $(shell pwd)/data:/data \
 		--name toolbox-api toolbox-api
 	@echo "\nAPI running at http://localhost:8000"
+
+# Database migrations
+migrate: build
+	@echo "Running database migrations locally..."
+	podman run --rm --env-file=.env \
+		-v $(shell pwd)/data:/data \
+		toolbox-api /app/toolbox-api migrate
+
+# Run migrations on Fly.io
+migrate-fly: build
+	@echo "Running database migrations on Fly.io..."
+	fly ssh console --command "cd /app && ./toolbox-api migrate"
 
 # Find and kill process using port 8000
 kill-port:
