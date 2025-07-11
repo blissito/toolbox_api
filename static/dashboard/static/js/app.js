@@ -373,8 +373,48 @@ function App() {
       ),
       
       // Main Content
-      h('main', { className: 'max-w-4xl mx-auto px-4 py-8' },
+      h('main', { className: 'max-w-4xl mx-auto px-4 py-8 space-y-8' },
         [
+          // Tools Section
+          h('div', { className: 'mb-8' },
+            [
+              h('h2', { className: 'text-2xl font-bold text-gray-900 mb-6' }, 'Herramientas Disponibles'),
+              h('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-6' },
+                [
+                  // Screenshot Tool Card
+                  h('div', { className: 'neo-card p-6 hover:shadow-lg transition-shadow' },
+                    [
+                      h('div', { className: 'flex items-center mb-4' },
+                        [
+                          h('div', { className: 'w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center mr-4' },
+                            h('i', { className: 'fas fa-camera text-indigo-600 text-xl' })
+                          ),
+                          h('h3', { className: 'text-xl font-bold' }, 'Screenshot')
+                        ]
+                      ),
+                      h('p', { className: 'text-gray-600 mb-4' }, 'Toma capturas de pantalla de cualquier página web. Perfecto para generar vistas previas o documentación.'),
+                      h('div', { className: 'flex justify-between items-center' },
+                        [
+                          h('a', {
+                            href: '/docs/screenshot.html',
+                            target: '_blank',
+                            className: 'text-indigo-600 hover:underline font-medium',
+                            title: 'Ver documentación'
+                          }, 'Documentación'),
+                          h('a', {
+                            href: '/screenshot-tester',
+                            className: 'neo-btn px-4 py-2 text-sm',
+                            title: 'Probar herramienta'
+                          }, 'Probar')
+                        ]
+                      )
+                    ]
+                  )
+                ]
+              )
+            ]
+          ),
+          
           // API Keys List Section
           h('div', { className: 'mb-8' },
             [

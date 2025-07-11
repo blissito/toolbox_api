@@ -199,9 +199,15 @@ func main() {
 			return
 		}
 
-		// Si es duckduckgo_search, servir duckduckgo_search.html si existe
+		// Si es duckduckgo_search, servir duckduckgo_search.html
 		if r.URL.Path == "duckduckgo_search" || r.URL.Path == "duckduckgo_search/" {
 			http.ServeFile(w, r, "docs/duckduckgo_search.html")
+			return
+		}
+
+		// Si es screenshot, servir screenshot.html
+		if r.URL.Path == "screenshot" || r.URL.Path == "screenshot/" {
+			http.ServeFile(w, r, "docs/screenshot.html")
 			return
 		}
 

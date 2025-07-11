@@ -83,16 +83,13 @@ func RunMigrations(db *sql.DB) error {
 			);
 
 			-- 3. Copy data from backup to new table
-			-- For existing records, use the hash as the key (if it exists) or id as fallback
+			-- For existing records, use the id as the key since hash column doesn't exist
 			INSERT INTO new_api_keys (id, user_id, name, key, created_at, last_used_at, revoked)
 			SELECT 
 				id, 
 				user_id, 
 				name, 
-				CASE 
-					WHEN hash IS NOT NULL AND hash != '' THEN hash 
-					ELSE id 
-				END as key,
+				id as key,  -- Use id as the key since hash doesn't exist
 				created_at, 
 				last_used_at, 
 				revoked 

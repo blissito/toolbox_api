@@ -422,6 +422,38 @@ function Dashboard() {
         h('h3', { class: 'text-sm font-medium text-green-800' }, '¡Nueva clave generada con éxito!')
       ),
 
+      // Sección de herramientas
+      h('div', { class: 'mb-8' },
+        h('h2', { class: 'text-lg font-medium text-gray-900 mb-4' }, 'Herramientas disponibles'),
+        h('div', { class: 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' },
+          // Tarjeta de Screenshot
+          h('div', { class: 'bg-white overflow-hidden shadow rounded-lg' },
+            h('div', { class: 'p-6' },
+              h('div', { class: 'flex items-center mb-4' },
+                h('div', { class: 'flex-shrink-0 bg-indigo-100 p-3 rounded-md' },
+                  h('i', { class: 'fas fa-camera text-indigo-600 text-xl' })
+                ),
+                h('h3', { class: 'ml-3 text-lg font-medium text-gray-900' }, 'Screenshot')
+              ),
+              h('p', { class: 'text-gray-600 mb-4' }, 'Toma capturas de pantalla de cualquier página web. Perfecto para generar vistas previas o documentación.'),
+              h('div', { class: 'flex justify-between items-center' },
+                h('a', {
+                  href: '/docs/screenshot',
+                  target: '_blank',
+                  class: 'text-sm font-medium text-indigo-600 hover:text-indigo-500',
+                  title: 'Ver documentación'
+                }, 'Documentación'),
+                h('a', {
+                  href: '/screenshot-tester',
+                  class: 'px-3 py-1.5 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700',
+                  title: 'Probar herramienta'
+                }, 'Probar')
+              )
+            )
+          )
+        )
+      ),
+
       // Sección de API Keys
       h('div', { class: 'bg-white shadow overflow-hidden sm:rounded-lg' },
         h('div', { class: 'px-4 py-5 sm:px-6 border-b border-gray-200' },
@@ -458,5 +490,10 @@ function Dashboard() {
   );
 }
 
-// Renderizar la aplicación
-render(h(Dashboard), document.getElementById('app'));
+// Hacer que la función Dashboard esté disponible globalmente
+window.Dashboard = Dashboard;
+
+// Renderizar la aplicación si el elemento #app existe
+if (document.getElementById('app')) {
+  render(h(Dashboard), document.getElementById('app'));
+}

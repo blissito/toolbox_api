@@ -17,6 +17,7 @@ import (
 
 	"toolbox/auth"
 	"toolbox/email"
+	"toolbox/tools"
 
 	md "github.com/JohannesKaufmann/html-to-markdown"
 	"github.com/PuerkitoBio/goquery"
@@ -142,7 +143,7 @@ func handleRequestMagicLink(w http.ResponseWriter, r *http.Request) {
 
 	// En producción, intentar enviar el correo
 	log.Printf("Producción: Intentando enviar enlace mágico a %s", req.Email)
-	
+
 	err = email.SendMagicLink(req.Email, token, r.Host)
 	if err != nil {
 		log.Printf("Error al enviar correo en producción: %v", err)
@@ -152,7 +153,7 @@ func handleRequestMagicLink(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-	
+
 	log.Printf("Correo de enlace mágico enviado exitosamente a %s", req.Email)
 	json.NewEncoder(w).Encode(map[string]string{
 		"message": "Se ha enviado un enlace de inicio de sesión al correo: " + req.Email,
@@ -712,6 +713,8 @@ func handleTool(w http.ResponseWriter, r *http.Request) {
 	switch req.Tool {
 	case "webfetch":
 		handleWebFetch(w, req.Payload)
+	case "screenshot":
+		handleScreenshot(w, req.Payload)
 	default:
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(map[string]interface{}{
@@ -721,6 +724,45 @@ func handleTool(w http.ResponseWriter, r *http.Request) {
 			"tool":    req.Tool,
 		})
 	}
+}
+
+// handleScreenshot maneja la captura de pantalla de una URL
+func handleScreenshot(w http.ResponseWriter, payload map[string]interface{}) {
+	// Función para enviar errores estandarizados
+	sendError := func(statusCode int, code, message string) {
+		w.WriteHeader(statusCode)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": false,
+			"error":   message,
+			"code":    code,
+		})
+	}
+
+	// Obtener la URL del payload
+	urlStr, ok := payload["url"].(string)
+	if !ok || urlStr == "" {
+		sendError(http.StatusBadRequest, "missing_url", "Se requiere el parámetro 'url' en el payload")
+		return
+	}
+
+	// Validar que la URL sea válida
+	_, err := url.ParseRequestURI(urlStr)
+	if err != nil {
+		sendError(http.StatusBadRequest, "invalid_url", "La URL proporcionada no es válida")
+		return
+	}
+
+	// Tomar la captura de pantalla
+	screenshot, err := tools.ShotScrapper(urlStr)
+	if err != nil {
+		sendError(http.StatusInternalServerError, "screenshot_failed", "Error al tomar la captura de pantalla: "+err.Error())
+		return
+	}
+
+	// Establecer el tipo de contenido como imagen PNG
+	w.Header().Set("Content-Type", "image/png")
+	w.WriteHeader(http.StatusOK)
+	w.Write(screenshot)
 }
 
 // handleWebFetch maneja la herramienta webfetch

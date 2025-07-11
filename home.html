@@ -86,7 +86,7 @@
                     Simplifica el desarrollo de agentes inteligentes con una única API, un solo endpoint y una sola clave API. Potencia tus proyectos de IA sin complicaciones.
                 </p>
                 <a href="/dash" class="neo-btn inline-block px-8 py-4 text-xl font-bold bg-black text-white hover:bg-gray-900">
-                    EMPIEZA GRATIS AHORA →
+                    COMIENZA GRATIS AHORA →
                 </a>
             </div>
             
@@ -121,68 +121,402 @@
             </div>
 
             <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <!-- Web Browsing -->
+                <!-- Screenshot -->
                 <div class="neo-card p-6 bg-white hover:transform hover:-translate-y-1 transition-transform">
-                    <div class="text-4xl mb-4">🌐</div>
-                    <h3 class="text-xl font-bold mb-3">Navegación Web</h3>
-                    <p class="text-gray-700">Automatiza la navegación y extracción de datos de cualquier sitio web.</p>
+                    <div class="flex flex-col h-full">
+                        <div class="flex-grow">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <div class="text-4xl mb-4">📸</div>
+                                    <h3 class="text-xl font-bold mb-3">Screenshot</h3>
+                                    <p class="text-gray-700 mb-4">Captura páginas web completas como imágenes.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap gap-2 mt-4">
+                            <a href="/static/screenshot_tester.html" class="neo-btn px-4 py-2 text-sm font-medium bg-black text-white hover:bg-gray-900">
+                                Probar ahora
+                            </a>
+                            <a href="/docs/screenshot" class="neo-btn px-4 py-2 text-sm font-medium border-2 border-black bg-white text-black hover:bg-gray-100">
+                                Ver documentación
+                            </a>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Search -->
+                <!-- Web Fetch -->
                 <div class="neo-card p-6 bg-white hover:transform hover:-translate-y-1 transition-transform">
-                    <div class="text-4xl mb-4">🔍</div>
-                    <h3 class="text-xl font-bold mb-3">Búsqueda Avanzada</h3>
-                    <p class="text-gray-700">Búsquedas en múltiples motores: Google, Bing, DuckDuckGo y más.</p>
+                    <div class="flex flex-col h-full">
+                        <div class="flex-grow">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <div class="text-4xl mb-4">🌐</div>
+                                    <h3 class="text-xl font-bold mb-3">Web Fetch</h3>
+                                    <p class="text-gray-700 mb-4">Extrae contenido HTML de cualquier URL con soporte para JavaScript.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap gap-2 mt-4">
+                            <a href="/docs/webfetch" class="neo-btn px-4 py-2 text-sm font-medium border-2 border-black bg-white text-black hover:bg-gray-100">
+                                Ver documentación
+                            </a>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Code Interpreter -->
+                <!-- DuckDuckGo Search -->
                 <div class="neo-card p-6 bg-white hover:transform hover:-translate-y-1 transition-transform">
-                    <div class="text-4xl mb-4">💻</div>
-                    <h3 class="text-xl font-bold mb-3">Intérprete de Código</h3>
-                    <p class="text-gray-700">Ejecuta y depura código en múltiples lenguajes de programación.</p>
+                    <div class="flex flex-col h-full">
+                        <div class="flex-grow">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <div class="text-4xl mb-4">🔍</div>
+                                    <h3 class="text-xl font-bold mb-3">DuckDuckGo Search</h3>
+                                    <p class="text-gray-700 mb-4">Búsquedas web privadas a través de la API de DuckDuckGo.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap gap-2 mt-4">
+                            <a href="/docs/duckduckgo" class="neo-btn px-4 py-2 text-sm font-medium border-2 border-black bg-white text-black hover:bg-gray-100">
+                                Ver documentación
+                            </a>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Document Processing -->
+                <!-- Google Search -->
                 <div class="neo-card p-6 bg-white hover:transform hover:-translate-y-1 transition-transform">
-                    <div class="text-4xl mb-4">📄</div>
-                    <h3 class="text-xl font-bold mb-3">Procesamiento de Documentos</h3>
-                    <p class="text-gray-700">Lee, analiza y extrae información de PDFs, Word, Excel y más.</p>
+                    <div class="flex flex-col h-full">
+                        <div class="flex-grow">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <div class="text-4xl mb-4">🔎</div>
+                                    <h3 class="text-xl font-bold mb-3">Google Search</h3>
+                                    <p class="text-gray-700 mb-4">Búsquedas web a través de la API de Google Programmable Search.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap gap-2 mt-4">
+                            <span class="px-4 py-2 text-sm font-medium text-gray-400 border-2 border-gray-200 bg-white">
+                                Próximamente
+                            </span>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Database Tools -->
+                <!-- PDF Parser -->
                 <div class="neo-card p-6 bg-white hover:transform hover:-translate-y-1 transition-transform">
-                    <div class="text-4xl mb-4">🗄️</div>
-                    <h3 class="text-xl font-bold mb-3">Herramientas de Base de Datos</h3>
-                    <p class="text-gray-700">Consulta y gestiona bases de datos SQL y NoSQL de forma segura.</p>
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="text-4xl mb-4">📄</div>
+                            <h3 class="text-xl font-bold mb-3">PDF Parser</h3>
+                            <p class="text-gray-700">Extrae texto y metadatos de archivos PDF.</p>
+                        </div>
+                        <span class="text-gray-400 text-sm font-medium whitespace-nowrap ml-4">próximamente</span>
+                    </div>
                 </div>
 
-                <!-- Productivity -->
+                <!-- SQL Database -->
                 <div class="neo-card p-6 bg-white hover:transform hover:-translate-y-1 transition-transform">
-                    <div class="text-4xl mb-4">⚡</div>
-                    <h3 class="text-xl font-bold mb-3">Productividad</h3>
-                    <p class="text-gray-700">Integración con GitHub, GitLab, Jira y más herramientas de desarrollo.</p>
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="text-4xl mb-4">🗃️</div>
+                            <h3 class="text-xl font-bold mb-3">SQL Database</h3>
+                            <p class="text-gray-700">Ejecuta consultas SQL en bases de datos relacionales.</p>
+                        </div>
+                        <span class="text-gray-400 text-sm font-medium whitespace-nowrap ml-4">próximamente</span>
+                    </div>
                 </div>
 
-                <!-- Communication -->
+                <!-- GitHub API -->
                 <div class="neo-card p-6 bg-white hover:transform hover:-translate-y-1 transition-transform">
-                    <div class="text-4xl mb-4">📨</div>
-                    <h3 class="text-xl font-bold mb-3">Comunicación</h3>
-                    <p class="text-gray-700">Envía emails, mensajes y notificaciones a través de múltiples canales.</p>
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="text-4xl mb-4">🐙</div>
+                            <h3 class="text-xl font-bold mb-3">GitHub API</h3>
+                            <p class="text-gray-700">Interactúa con repositorios, issues y pull requests de GitHub.</p>
+                        </div>
+                        <span class="text-gray-400 text-sm font-medium whitespace-nowrap ml-4">próximamente</span>
+                    </div>
                 </div>
 
-                <!-- Finance -->
+                <!-- Email Sender -->
                 <div class="neo-card p-6 bg-white hover:transform hover:-translate-y-1 transition-transform">
-                    <div class="text-4xl mb-4">💳</div>
-                    <h3 class="text-xl font-bold mb-3">Finanzas</h3>
-                    <p class="text-gray-700">Procesa pagos, gestiona suscripciones y más con múltiples pasarelas.</p>
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="text-4xl mb-4">✉️</div>
+                            <h3 class="text-xl font-bold mb-3">Email Sender</h3>
+                            <p class="text-gray-700">Envía correos electrónicos a través de SMTP.</p>
+                        </div>
+                        <span class="text-gray-400 text-sm font-medium whitespace-nowrap ml-4">próximamente</span>
+                    </div>
                 </div>
 
-                <!-- AI & ML -->
+                <!-- Stripe API -->
                 <div class="neo-card p-6 bg-white hover:transform hover:-translate-y-1 transition-transform">
-                    <div class="text-4xl mb-4">🤖</div>
-                    <h3 class="text-xl font-bold mb-3">IA y Aprendizaje Automático</h3>
-                    <p class="text-gray-700">Integra modelos de IA para análisis de texto, imágenes y más.</p>
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="text-4xl mb-4">💳</div>
+                            <h3 class="text-xl font-bold mb-3">Stripe API</h3>
+                            <p class="text-gray-700">Procesa pagos con tarjeta de crédito y gestiona suscripciones.</p>
+                        </div>
+                        <span class="text-gray-400 text-sm font-medium whitespace-nowrap ml-4">próximamente</span>
+                    </div>
                 </div>
+
+                <!-- OpenAI API -->
+                <div class="neo-card p-6 bg-white hover:transform hover:-translate-y-1 transition-transform">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="text-4xl mb-4">🤖</div>
+                            <h3 class="text-xl font-bold mb-3">OpenAI API</h3>
+                            <p class="text-gray-700">Accede a modelos de lenguaje avanzados como GPT-4.</p>
+                        </div>
+                        <span class="text-gray-400 text-sm font-medium whitespace-nowrap ml-4">próximamente</span>
+                    </div>
+                </div>
+
+                <!-- Jira API -->
+                <div class="neo-card p-6 bg-white hover:transform hover:-translate-y-1 transition-transform">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="text-4xl mb-4">📋</div>
+                            <h3 class="text-xl font-bold mb-3">Jira API</h3>
+                            <p class="text-gray-700">Gestiona proyectos, issues y sprints en Jira.</p>
+                        </div>
+                        <span class="text-gray-400 text-sm font-medium whitespace-nowrap ml-4">próximamente</span>
+                    </div>
+                </div>
+
+                <!-- Slack API -->
+                <div class="neo-card p-6 bg-white hover:transform hover:-translate-y-1 transition-transform">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="text-4xl mb-4">💬</div>
+                            <h3 class="text-xl font-bold mb-3">Slack API</h3>
+                            <p class="text-gray-700">Envía mensajes y notificaciones a canales de Slack.</p>
+                        </div>
+                        <span class="text-gray-400 text-sm font-medium whitespace-nowrap ml-4">próximamente</span>
+                    </div>
+                </div>
+
+                <!-- PDF Generator -->
+                <div class="neo-card p-6 bg-white hover:transform hover:-translate-y-1 transition-transform">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="text-4xl mb-4">📝</div>
+                            <h3 class="text-xl font-bold mb-3">PDF Generator</h3>
+                            <p class="text-gray-700">Crea archivos PDF a partir de HTML o texto con formato.</p>
+                        </div>
+                        <span class="text-gray-400 text-sm font-medium whitespace-nowrap ml-4">próximamente</span>
+                    </div>
+                </div>
+
+                <!-- Code Execution -->
+                <div class="neo-card p-6 bg-white hover:transform hover:-translate-y-1 transition-transform">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="text-4xl mb-4">👨‍💻</div>
+                            <h3 class="text-xl font-bold mb-3">Code Execution</h3>
+                            <p class="text-gray-700">Ejecuta código en múltiples lenguajes de programación.</p>
+                        </div>
+                        <span class="text-gray-400 text-sm font-medium whitespace-nowrap ml-4">próximamente</span>
+                    </div>
+                </div>
+
+                <!-- Audio Processing -->
+                <div class="neo-card p-6 bg-white hover:transform hover:-translate-y-1 transition-transform">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="text-4xl mb-4">🎵</div>
+                            <h3 class="text-xl font-bold mb-3">Audio Processing</h3>
+                            <p class="text-gray-700">Convierte, edita y procesa archivos de audio.</p>
+                        </div>
+                        <span class="text-gray-400 text-sm font-medium whitespace-nowrap ml-4">próximamente</span>
+                    </div>
+                </div>
+
+                <!-- Image Processing -->
+                <div class="neo-card p-6 bg-white hover:transform hover:-translate-y-1 transition-transform">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="text-4xl mb-4">🖼️</div>
+                            <h3 class="text-xl font-bold mb-3">Image Processing</h3>
+                            <p class="text-gray-700">Redimensiona, convierte y aplica filtros a imágenes.</p>
+                        </div>
+                        <span class="text-gray-400 text-sm font-medium whitespace-nowrap ml-4">próximamente</span>
+                    </div>
+                </div>
+
+                <!-- Video Processing -->
+                <div class="neo-card p-6 bg-white hover:transform hover:-translate-y-1 transition-transform">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="text-4xl mb-4">🎥</div>
+                            <h3 class="text-xl font-bold mb-3">Video Processing</h3>
+                            <p class="text-gray-700">Convierte, recorta y procesa archivos de video.</p>
+                        </div>
+                        <span class="text-gray-400 text-sm font-medium whitespace-nowrap ml-4">próximamente</span>
+                    </div>
+                </div>
+
+                <!-- Scheduling -->
+                <div class="neo-card p-6 bg-white hover:transform hover:-translate-y-1 transition-transform">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="text-4xl mb-4">📅</div>
+                            <h3 class="text-xl font-bold mb-3">Tareas Programadas</h3>
+                            <p class="text-gray-700">Configura tareas recurrentes con expresiones cron.</p>
+                        </div>
+                        <span class="text-gray-400 text-sm font-medium whitespace-nowrap ml-4">próximamente</span>
+                    </div>
+                </div>
+
+                <!-- Cryptocurrency -->
+                <div class="neo-card p-6 bg-white hover:transform hover:-translate-y-1 transition-transform">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="text-4xl mb-4">₿</div>
+                            <h3 class="text-xl font-bold mb-3">Criptomonedas</h3>
+                            <p class="text-gray-700">Consulta precios y realiza transacciones con criptomonedas.</p>
+                        </div>
+                        <span class="text-gray-400 text-sm font-medium whitespace-nowrap ml-4">próximamente</span>
+                    </div>
+                </div>
+
+                <!-- Authentication -->
+                <div class="neo-card p-6 bg-white hover:transform hover:-translate-y-1 transition-transform">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="text-4xl mb-4">🔑</div>
+                            <h3 class="text-xl font-bold mb-3">Autenticación</h3>
+                            <p class="text-gray-700">Implementa OAuth, JWT y otros métodos de autenticación.</p>
+                        </div>
+                        <span class="text-gray-400 text-sm font-medium whitespace-nowrap ml-4">próximamente</span>
+                    </div>
+                </div>
+
+                <!-- Cloud Storage -->
+                <div class="neo-card p-6 bg-white hover:transform hover:-translate-y-1 transition-transform">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="text-4xl mb-4">☁️</div>
+                            <h3 class="text-xl font-bold mb-3">Almacenamiento Cloud</h3>
+                            <p class="text-gray-700">Gestiona archivos en S3, Google Drive y otros servicios.</p>
+                        </div>
+                        <span class="text-gray-400 text-sm font-medium whitespace-nowrap ml-4">próximamente</span>
+                    </div>
+                </div>
+
+                <!-- Natural Language Processing -->
+                <div class="neo-card p-6 bg-white hover:transform hover:-translate-y-1 transition-transform">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="text-4xl mb-4">📝</div>
+                            <h3 class="text-xl font-bold mb-3">Procesamiento de Lenguaje</h3>
+                            <p class="text-gray-700">Análisis de sentimientos, traducción y resumen de texto.</p>
+                        </div>
+                        <span class="text-gray-400 text-sm font-medium whitespace-nowrap ml-4">próximamente</span>
+                    </div>
+                </div>
+
+                <!-- Social Media -->
+                <div class="neo-card p-6 bg-white hover:transform hover:-translate-y-1 transition-transform">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="text-4xl mb-4">🌐</div>
+                            <h3 class="text-xl font-bold mb-3">Redes Sociales</h3>
+                            <p class="text-gray-700">Publica y gestiona contenido en múltiples plataformas.</p>
+                        </div>
+                        <span class="text-gray-400 text-sm font-medium whitespace-nowrap ml-4">próximamente</span>
+                    </div>
+                </div>
+
+                <!-- Payment APIs -->
+                <div class="neo-card p-6 bg-white hover:transform hover:-translate-y-1 transition-transform">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="text-4xl mb-4">💸</div>
+                            <h3 class="text-xl font-bold mb-3">Pasarelas de Pago</h3>
+                            <p class="text-gray-700">Integración con Stripe, PayPal y otros procesadores.</p>
+                        </div>
+                        <span class="text-gray-400 text-sm font-medium whitespace-nowrap ml-4">próximamente</span>
+                    </div>
+                </div>
+
+                <!-- Geolocation -->
+                <div class="neo-card p-6 bg-white hover:transform hover:-translate-y-1 transition-transform">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="text-4xl mb-4">📍</div>
+                            <h3 class="text-xl font-bold mb-3">Geolocalización</h3>
+                            <p class="text-gray-700">Obtén direcciones, distancias y mapas interactivos.</p>
+                        </div>
+                        <span class="text-gray-400 text-sm font-medium whitespace-nowrap ml-4">próximamente</span>
+                    </div>
+                </div>
+
+                <!-- Data Analysis -->
+                <div class="neo-card p-6 bg-white hover:transform hover:-translate-y-1 transition-transform">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="text-4xl mb-4">📊</div>
+                            <h3 class="text-xl font-bold mb-3">Análisis de Datos</h3>
+                            <p class="text-gray-700">Procesa y visualiza grandes conjuntos de datos.</p>
+                        </div>
+                        <span class="text-gray-400 text-sm font-medium whitespace-nowrap ml-4">próximamente</span>
+                    </div>
+                </div>
+
+                <!-- AI APIs -->
+                <div class="neo-card p-6 bg-white hover:transform hover:-translate-y-1 transition-transform">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="text-4xl mb-4">🧠</div>
+                            <h3 class="text-xl font-bold mb-3">APIs de IA</h3>
+                            <p class="text-gray-700">Modelos de lenguaje, visión por computadora y más.</p>
+                        </div>
+                        <span class="text-gray-400 text-sm font-medium whitespace-nowrap ml-4">próximamente</span>
+                    </div>
+                </div>
+
+                <!-- Security Tools -->
+                <div class="neo-card p-6 bg-white hover:transform hover:-translate-y-1 transition-transform">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="text-4xl mb-4">🛡️</div>
+                            <h3 class="text-xl font-bold mb-3">Herramientas de Seguridad</h3>
+                            <p class="text-gray-700">Escaneo de vulnerabilidades y pruebas de penetración.</p>
+                        </div>
+                        <span class="text-gray-400 text-sm font-medium whitespace-nowrap ml-4">próximamente</span>
+                    </div>
+                </div>
+
+                <!-- Email Marketing -->
+                <div class="neo-card p-6 bg-white hover:transform hover:-translate-y-1 transition-transform">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="text-4xl mb-4">📧</div>
+                            <h3 class="text-xl font-bold mb-3">Email Marketing</h3>
+                            <p class="text-gray-700">Envía campañas masivas y gestiona suscriptores.</p>
+                        </div>
+                        <span class="text-gray-400 text-sm font-medium whitespace-nowrap ml-4">próximamente</span>
+                    </div>
+                </div>
+
+                <!-- SMS Gateway -->
+                <div class="neo-card p-6 bg-white hover:transform hover:-translate-y-1 transition-transform">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="text-4xl mb-4">📱</div>
+                            <h3 class="text-xl font-bold mb-3">Mensajería SMS</h3>
+                            <p class="text-gray-700">Envía y recibe mensajes de texto a nivel global.</p>
+                        </div>
+                        <span class="text-gray-400 text-sm font-medium whitespace-nowrap ml-4">próximamente</span>
+                    </div>
+                </div>
+
+
             </div>
         </div>
     </section>
